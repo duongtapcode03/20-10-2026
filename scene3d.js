@@ -85,7 +85,7 @@ class Scene3DManager {
     this.createGlowingParticleTexture();
     this.buildGiftBox();
     this.buildHeartRoseSculpture();
-    this.buildRoseGarden();
+    this.buildRoseBouquet();
     this.buildFallingPetalSystem();
     this.buildFloorReflectiveRing();
 
@@ -416,34 +416,37 @@ class Scene3DManager {
     return geo;
   }
 
-  // One rose petal: broad rounded fan, cupped around the heart, rim rolling outward on the outer layers
+  // One rose petal: rounded fan with no corners, cupped around the heart, rim rolling softly outward
   buildRosePetalGeometry(layer, palette) {
     const smooth = THREE.MathUtils.smoothstep;
-    const cup = 1.6 - layer * 1.0;              // inner petals wrap tightly around the heart
-    const roll = 0.04 + layer * layer * 0.42;   // outer petals curl their rim back
+    const cup = 1.5 - layer * 0.9;              // inner petals wrap tightly around the heart
+    const roll = 0.05 + layer * layer * 0.4;    // outer petals curl their rim back
     const seed = Math.random() * 10;
-    const shade = 0.72 + layer * 0.28;          // heart of the rose sits in soft shadow
+    const shade = 0.74 + layer * 0.26;          // heart of the rose sits in soft shadow
 
     return this.buildCurvedSurface(16, 20, (u, v, col) => {
-      const halfW = 0.07 + 0.5 * Math.pow(Math.sin(Math.min(v * 1.3, 1) * Math.PI * 0.5), 0.75);
-      const x = u * halfW;
-      const y = v - 0.16 * u * u * v * v;       // rounded top edge
-      const rim = smooth(v, 0.55, 1);
+      // v runs from the narrow claw at the base out to the circular rim, u sweeps across the fan
+      const phi = u * 0.62;
+      const rho = v * (1 - 0.16 * u * u);
+      const x = Math.sin(phi) * rho * 1.15 + u * 0.05 * (1 - v);
+      const y = Math.cos(phi) * rho;
+      const rim = smooth(v, 0.5, 1);
       const z = -cup * x * x
-        - (1 - layer) * 0.12 * v * v            // inner petals lean in to close the bud
-        + roll * rim * rim                      // tip rolls outward
-        + roll * 0.9 * Math.pow(Math.abs(u), 3) * v * v // side edges reflex back into points
-        + 0.018 * Math.sin(u * 6 + seed) * v * v * v;   // soft ruffle
+        - (1 - layer) * 0.12 * y * y            // inner petals lean in to close the bud
+        + roll * rim * rim                      // the whole rim rolls outward
+        + 0.012 * Math.sin(u * 5 + seed) * rim; // gentle ruffle
 
       col.copy(palette.base).lerp(palette.body, smooth(v, 0.0, 0.55));
-      col.lerp(palette.rim, smooth(Math.max(Math.abs(u) * 0.95, v), 0.7, 1.0) * 0.6);
+      col.lerp(palette.rim, smooth(v, 0.75, 1.0) * (0.25 + 0.35 * layer));
+      if (palette.heart) col.lerp(palette.heart, (1 - layer) * (1 - layer) * 0.6);
       col.multiplyScalar(shade);
       return { x, y, z };
     });
   }
 
-  // Builds one rose: petals arranged on a golden-angle spiral, each petal on a pivot so it can bloom open
-  buildRoseFlower(petalCount, palette) {
+  // Builds one rose: petals arranged on a golden-angle spiral, each petal on a pivot so it can bloom open.
+  // openness < 1 keeps the bloom softly cupped (bouquet roses), 1 lets the outer petals open wide.
+  buildRoseFlower(petalCount, palette, { openness = 1, sepals = true } = {}) {
     const flower = new THREE.Group();
     const petals = [];
     const goldenAngle = Math.PI * (3 - Math.sqrt(5));
@@ -479,133 +482,495 @@ class Scene3DManager {
       petals.push({
         node: tiltNode,
         closedTilt: layer * 0.12,
-        openTilt: 0.04 + Math.pow(layer, 1.5) * 1.05,
+        openTilt: 0.04 + Math.pow(layer, 1.5) * 1.05 * openness,
         phase: Math.random() * Math.PI * 2
       });
     }
 
-    // Rounded green receptacle and slender sepals curling down beneath the bloom
-    const greenMat = new THREE.MeshStandardMaterial({ color: 0x4f8f47, roughness: 0.6, side: THREE.DoubleSide });
-    const receptacle = new THREE.Mesh(new THREE.SphereGeometry(0.15, 32, 24), greenMat);
-    receptacle.scale.set(1, 0.9, 1);
-    receptacle.position.y = -0.2;
-    flower.add(receptacle);
+    if (sepals) {
+      // Rounded green receptacle and slender sepals curling down beneath the bloom
+      const { greenMat, sepalMat, receptacleGeo, sepalGeo } = this.roseGreenery();
+      const receptacle = new THREE.Mesh(receptacleGeo, greenMat);
+      receptacle.scale.set(1, 0.9, 1);
+      receptacle.position.y = -0.2;
+      flower.add(receptacle);
 
-    const sepalMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6, side: THREE.DoubleSide });
-    const sepalLight = new THREE.Color(0x7fb86a);
-    const sepalGeo = this.buildCurvedSurface(6, 14, (u, v, col) => {
-      const halfW = 0.11 * Math.pow(1 - v, 0.7) * Math.pow(Math.min(v * 4, 1), 0.5) + 0.004;
-      const x = u * halfW;
-      col.setHex(0x3f7d3a).lerp(sepalLight, (1 - Math.abs(u)) * 0.6);
-      return { x, y: v * 0.62, z: -Math.abs(x) * 0.6 + 0.3 * v * v };
-    });
-    for (let k = 0; k < 5; k++) {
-      const pivot = new THREE.Group();
-      pivot.rotation.y = -(k / 5) * Math.PI * 2 - 0.4;
-      const sepal = new THREE.Mesh(sepalGeo, sepalMat);
-      sepal.position.set(0.1, -0.2, 0);
-      sepal.rotation.set(0, Math.PI / 2, -2.0);
-      pivot.add(sepal);
-      flower.add(pivot);
+      for (let k = 0; k < 5; k++) {
+        const pivot = new THREE.Group();
+        pivot.rotation.y = -(k / 5) * Math.PI * 2 - 0.4;
+        const sepal = new THREE.Mesh(sepalGeo, sepalMat);
+        sepal.position.set(0.1, -0.2, 0);
+        sepal.rotation.set(0, Math.PI / 2, -2.0);
+        pivot.add(sepal);
+        flower.add(pivot);
+      }
     }
 
-    return { flower, petals, greenMat };
+    return { flower, petals };
   }
 
-  // A rose leaf: three serrated leaflets on a short stalk, folded along the midrib
-  buildRoseLeaf(greenMat) {
-    const leaf = new THREE.Group();
-    const leafletMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55, side: THREE.DoubleSide });
-    const leafLight = new THREE.Color(0x76b35f);
-    const leafletGeo = this.buildCurvedSurface(10, 18, (u, v, col) => {
-      const serration = 1 + 0.05 * Math.sin(v * 46);
-      const halfW = 0.3 * Math.pow(Math.sin(Math.PI * Math.pow(v, 0.8)), 0.85) * serration + 0.004;
-      const x = u * halfW;
-      col.setHex(0x2f6e35).lerp(leafLight, Math.pow(1 - Math.abs(u), 2) * 0.55 + v * 0.15);
-      return { x, y: v, z: Math.abs(x) * 0.45 - 0.18 * v * v };
+  // Green materials and shapes shared by every rose
+  roseGreenery() {
+    if (!this.greenery) {
+      const sepalLight = new THREE.Color(0x7fb86a);
+      this.greenery = {
+        greenMat: new THREE.MeshStandardMaterial({ color: 0x4f8f47, roughness: 0.6, side: THREE.DoubleSide }),
+        sepalMat: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55, side: THREE.DoubleSide }),
+        receptacleGeo: new THREE.SphereGeometry(0.15, 32, 24),
+        sepalGeo: this.buildCurvedSurface(6, 14, (u, v, col) => {
+          const halfW = 0.11 * Math.pow(1 - v, 0.7) * Math.pow(Math.min(v * 4, 1), 0.5) + 0.004;
+          const x = u * halfW;
+          col.setHex(0x3f7d3a).lerp(sepalLight, (1 - Math.abs(u)) * 0.6);
+          return { x, y: v * 0.62, z: -Math.abs(x) * 0.6 + 0.3 * v * v };
+        })
+      };
+    }
+    return this.greenery;
+  }
+
+  // Bakes every mesh under a detached group into one geometry with vertex colours, so a static
+  // cluster of flowers costs a single draw call. Meshes without vertex colours use userData.color.
+  // (Avoid mirrored scales inside: baking would flip their winding.)
+  bakeGroup(root) {
+    root.updateMatrixWorld(true);
+    const meshes = [];
+    root.traverse(obj => {
+      if (obj.isMesh) meshes.push(obj);
     });
 
-    const stalk = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0.22, 0.08, 0),
-      new THREE.Vector3(0.5, 0.1, 0)
-    ]);
-    leaf.add(new THREE.Mesh(new THREE.TubeGeometry(stalk, 20, 0.018, 8, false), greenMat));
+    let vertexCount = 0;
+    let indexCount = 0;
+    const baked = meshes.map(mesh => {
+      const geo = mesh.geometry.clone().applyMatrix4(mesh.matrixWorld);
+      vertexCount += geo.attributes.position.count;
+      indexCount += geo.index.count;
+      return { geo, tint: mesh.userData.color };
+    });
 
-    const addLeaflet = (point, yaw, size, lift) => {
-      const m = new THREE.Mesh(leafletGeo, leafletMat);
-      m.position.copy(point);
-      m.rotation.set(-Math.PI / 2 + lift, -(yaw + Math.PI / 2), 0, 'YXZ');
-      m.scale.setScalar(size);
-      leaf.add(m);
-    };
-    addLeaflet(stalk.getPoint(1), 0, 0.62, 0.2);
-    addLeaflet(stalk.getPoint(0.55), 0.95, 0.48, 0.15);
-    addLeaflet(stalk.getPoint(0.55), -0.95, 0.48, 0.15);
-    return leaf;
+    const position = new Float32Array(vertexCount * 3);
+    const normal = new Float32Array(vertexCount * 3);
+    const color = new Float32Array(vertexCount * 3);
+    const index = new Uint32Array(indexCount);
+    let v = 0;
+    let i = 0;
+    baked.forEach(({ geo, tint }) => {
+      const count = geo.attributes.position.count;
+      position.set(geo.attributes.position.array, v * 3);
+      normal.set(geo.attributes.normal.array, v * 3);
+      if (geo.attributes.color) {
+        color.set(geo.attributes.color.array, v * 3);
+      } else {
+        for (let k = 0; k < count; k++) {
+          color[(v + k) * 3] = tint.r;
+          color[(v + k) * 3 + 1] = tint.g;
+          color[(v + k) * 3 + 2] = tint.b;
+        }
+      }
+      for (let k = 0; k < geo.index.count; k++) index[i + k] = geo.index.array[k] + v;
+      v += count;
+      i += geo.index.count;
+      geo.dispose();
+    });
+
+    const merged = new THREE.BufferGeometry();
+    merged.setAttribute('position', new THREE.BufferAttribute(position, 3));
+    merged.setAttribute('normal', new THREE.BufferAttribute(normal, 3));
+    merged.setAttribute('color', new THREE.BufferAttribute(color, 3));
+    merged.setIndex(new THREE.BufferAttribute(index, 1));
+    return merged;
   }
 
-  buildRoseGarden() {
-    this.roseGardenGroup = new THREE.Group();
-    this.roseGardenGroup.position.set(0, 0.32, 0); // keeps the stem on the floor disc when scaled 1.2×
-    this.gardenRoses = [];
+  // Petals fanned around +y on golden-angle pivots, tipped outward by tilt(layer) — shared by
+  // carnations and daisies. Returns the head as a group of plain meshes ready for baking.
+  buildPetalHead(count, petalGeo, { offset, tilt, size }) {
+    const head = new THREE.Group();
+    const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+    for (let i = 0; i < count; i++) {
+      const layer = count > 1 ? i / (count - 1) : 1;
+      const pivot = new THREE.Group();
+      pivot.rotation.y = -i * goldenAngle;
+      const tiltNode = new THREE.Group();
+      tiltNode.position.x = offset(layer);
+      tiltNode.rotation.z = -tilt(layer);
+      const petal = new THREE.Mesh(petalGeo(layer, i));
+      petal.rotation.y = Math.PI / 2;
+      petal.scale.setScalar(size(layer));
+      tiltNode.add(petal);
+      pivot.add(tiltNode);
+      head.add(pivot);
+    }
+    return head;
+  }
+
+  // A frilly carnation head opening toward +y, about 1 unit across
+  buildCarnation(palette) {
+    const smooth = THREE.MathUtils.smoothstep;
+    return this.buildPetalHead(16, (layer) => {
+      const seed = Math.random() * 10;
+      return this.buildCurvedSurface(20, 6, (u, v, col) => {
+        const frill = 1 + 0.09 * Math.sin(u * 24 + seed) * smooth(v, 0.55, 1); // zig-zag frilled rim
+        const phi = u * 0.85;
+        const rho = v * (1 - 0.1 * u * u) * frill;
+        const x = Math.sin(phi) * rho;
+        const z = -0.4 * x * x + 0.08 * Math.sin(u * 15 + seed) * smooth(v, 0.4, 1) + 0.12 * v * v;
+        col.copy(palette.base).lerp(palette.body, smooth(v, 0, 0.6)).lerp(palette.rim, smooth(v, 0.8, 1) * 0.7);
+        col.multiplyScalar(0.8 + 0.2 * layer);
+        return { x, y: Math.cos(phi) * rho, z };
+      });
+    }, {
+      offset: (layer) => 0.02 + layer * 0.1,
+      tilt: (layer) => 0.25 + layer * 1.15,
+      size: (layer) => 0.5 + layer * 0.4
+    });
+  }
+
+  // A white daisy opening toward +y: slender petals around a domed golden centre
+  buildDaisy() {
+    const smooth = THREE.MathUtils.smoothstep;
+    const petalBase = new THREE.Color(0xf3ecd8);
+    const petalGeo = this.buildCurvedSurface(6, 10, (u, v, col) => {
+      const halfW = 0.15 * Math.pow(Math.sin(Math.PI * Math.min(0.1 + v * 0.9, 1)), 0.5) + 0.01;
+      const x = u * halfW;
+      col.setHex(0xfffefa).lerp(petalBase, (1 - smooth(v, 0, 0.3)) * 0.7);
+      return { x, y: v, z: -x * x * 2 + 0.05 * v * v };
+    });
+    const head = this.buildPetalHead(16, () => petalGeo, {
+      offset: () => 0.1,
+      tilt: () => 1.25,
+      size: () => 0.42
+    });
+    const centreGeo = new THREE.SphereGeometry(0.13, 20, 14);
+    [[1, 0x7b5a1a, 0.0], [0.8, 0xf2b630, 0.025]].forEach(([s, color, y]) => {
+      const centre = new THREE.Mesh(centreGeo);
+      centre.scale.set(s, s * 0.5, s);
+      centre.position.y = y;
+      centre.userData.color = new THREE.Color(color);
+      head.add(centre);
+    });
+    return head;
+  }
+
+  // A wispy green filler sprig along a curve: thin stem, tiny paired leaves and a few buds at the tip
+  buildSprig(curve, leafGeo, budGeo) {
+    const sprig = new THREE.Group();
+    const stemColor = new THREE.Color(0x84b54a);
+    const stem = new THREE.Mesh(new THREE.TubeGeometry(curve, 24, 0.009, 5, false));
+    stem.userData.color = stemColor;
+    sprig.add(stem);
+
+    const up = new THREE.Vector3(0, 1, 0);
+    const tangent = new THREE.Vector3();
+    const side = new THREE.Vector3();
+    const dir = new THREE.Vector3();
+    const roll = new THREE.Quaternion();
+    let flip = 1;
+    for (let t = 0.2; t < 0.96; t += 0.07) {
+      curve.getTangent(t, tangent);
+      side.crossVectors(tangent, up).normalize().multiplyScalar(flip);
+      dir.copy(tangent).multiplyScalar(0.6).add(side).addScaledVector(up, 0.25).normalize();
+      const leaf = new THREE.Mesh(leafGeo);
+      leaf.position.copy(curve.getPoint(t));
+      leaf.quaternion.setFromUnitVectors(up, dir).premultiply(roll.setFromAxisAngle(dir, Math.random() * Math.PI));
+      leaf.scale.setScalar(0.07 + Math.random() * 0.04);
+      sprig.add(leaf);
+      flip = -flip;
+    }
+
+    const tip = curve.getPoint(1);
+    for (let k = 0; k < 4; k++) {
+      const bud = new THREE.Mesh(budGeo);
+      bud.position.copy(tip).add(new THREE.Vector3((Math.random() - 0.5) * 0.06, Math.random() * 0.04, (Math.random() - 0.5) * 0.06));
+      bud.scale.setScalar(0.012 + Math.random() * 0.008);
+      bud.userData.color = new THREE.Color(0xc8e283);
+      sprig.add(bud);
+    }
+    return sprig;
+  }
+
+  // Surface of revolution around +y from a [radius, height] profile (inside → rim).
+  // shape(theta, v, r, y, col) returns the pushed { r, y } to add folds, crinkles and waves.
+  // It wraps a little more than a full turn and spirals outward, so the overlap never z-fights.
+  buildRevolvedSurface(profile, cols, rows, shape) {
+    const curve = new THREE.CatmullRomCurve3(profile.map(([r, y]) => new THREE.Vector3(r, y, 0)));
+    const turn = Math.PI * 2 + 0.5;
+    const p = new THREE.Vector3();
+    return this.buildCurvedSurface(cols, rows, (u, v, col) => {
+      const around = u * 0.5 + 0.5;
+      const theta = around * turn;
+      curve.getPoint(v, p);
+      const { r, y } = shape(theta, v, p.x, p.y, col);
+      const rr = r * (1 + 0.03 * around);
+      return { x: Math.sin(theta) * rr, y, z: Math.cos(theta) * rr };
+    });
+  }
+
+  // A flat satin ribbon swept along a curve. widthDir(t, out) sets the direction its width spans;
+  // notch > 0 cuts a V into the far end like a ribbon tail.
+  buildRibbonGeometry(curve, width, widthDir, notch = 0) {
+    const dir = new THREE.Vector3();
+    return this.buildCurvedSurface(4, 48, (u, v) => {
+      const t = v * (1 - notch * (1 - Math.abs(u)));
+      const p = curve.getPoint(t);
+      widthDir(t, dir);
+      const w = u * width * 0.5;
+      return { x: p.x + dir.x * w, y: p.y + dir.y * w, z: p.z + dir.z * w };
+    });
+  }
+
+  // Ribbon bow loop: a teardrop running out along -x and back, bulging toward the front (+z)
+  buildBowLoopGeometry(length, depth, width) {
+    const points = [];
+    for (let k = 0; k <= 24; k++) {
+      const t = k / 24;
+      const out = (1 - Math.cos(t * Math.PI * 2)) / 2;
+      points.push(new THREE.Vector3(-length * out, 0, depth * Math.sin(t * Math.PI * 2) * Math.pow(out, 0.35)));
+    }
+    return this.buildRibbonGeometry(new THREE.CatmullRomCurve3(points), width, (t, out) => out.set(0, 1, 0));
+  }
+
+  // Little gift card hanging from the ribbons
+  buildGiftCard() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 320;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fffaf3';
+    ctx.fillRect(0, 0, 256, 320);
+    ctx.strokeStyle = '#f2a7b8';
+    ctx.lineWidth = 10;
+    ctx.strokeRect(14, 14, 228, 292);
+    ctx.fillStyle = '#e26a85';
+    ctx.textAlign = 'center';
+    ctx.font = 'italic 700 66px Georgia, serif';
+    ctx.fillText('20/10', 128, 140);
+    ctx.font = 'italic 32px Georgia, serif';
+    ctx.fillText('Yêu thương', 128, 200);
+    ctx.beginPath();
+    ctx.moveTo(128, 278);
+    ctx.bezierCurveTo(92, 254, 98, 220, 128, 238);
+    ctx.bezierCurveTo(158, 220, 164, 254, 128, 278);
+    ctx.fill();
+
+    return new THREE.Mesh(
+      new THREE.PlaneGeometry(0.3, 0.375),
+      new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(canvas), roughness: 0.8, side: THREE.DoubleSide })
+    );
+  }
+
+  // ================= 2c. 3D FLOWER BOUQUET =================
+  // A florist's round bouquet: cream-peach roses among frilly pink carnations and two white daisies,
+  // wispy greenery, a crinkled pink lining inside a white paper collar, and a paper-wrapped handle
+  // tied with long pink and white satin ribbons. The bouquet's face looks along its local +y.
+  buildRoseBouquet() {
+    this.roseBouquetGroup = new THREE.Group();
+    this.roseBouquetGroup.position.set(0, 0.95, 0);
+    this.bouquetRoses = [];
     this.roseBloom = 0;
 
-    const stemHeight = 2.7;
-    const holder = new THREE.Group();
-    holder.position.set(0, -1.6, 0);
+    // The sway node rocks the bouquet gently; inside it the face tilts up toward the viewer
+    this.bouquetSway = new THREE.Group();
+    this.roseBouquetGroup.add(this.bouquetSway);
+    const bouquet = new THREE.Group();
+    bouquet.rotation.x = 0.45;
+    this.bouquetSway.add(bouquet);
 
-    const { flower, petals, greenMat } = this.buildRoseFlower(36, this.rosePalette());
+    const smooth = THREE.MathUtils.smoothstep;
+    const domeHeight = (r) => 0.3 * (1 - Math.pow(r / 1.6, 2));
+    // Sit a flower on the dome at (x, z) across the face, its head tipped outward with the curve
+    const place = (obj, x, z, lift, scale) => {
+      const r = Math.hypot(x, z);
+      obj.position.set(x, domeHeight(r) + lift, z);
+      obj.rotation.set(r * 0.55, Math.atan2(x, z), 0, 'YXZ');
+      obj.scale.setScalar(scale);
+      return obj;
+    };
 
-    // Softly curved stem from the meadow floor up to the bloom
-    const curve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0.1, stemHeight * 0.35, 0.04),
-      new THREE.Vector3(-0.06, stemHeight * 0.7, -0.03),
-      new THREE.Vector3(0, stemHeight, 0)
-    ]);
-    holder.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 96, 0.055, 16, false), greenMat));
-
-    // Small thorns along the stem
-    const thornGeo = new THREE.ConeGeometry(0.03, 0.12, 12);
-    const thornMat = new THREE.MeshStandardMaterial({ color: 0x8a6a3c, roughness: 0.5 });
-    const up = new THREE.Vector3(0, 1, 0);
-    [[0.18, 0.4], [0.33, 2.6], [0.5, 4.4], [0.72, 1.3], [0.84, 3.6]].forEach(([t, a]) => {
-      const thorn = new THREE.Mesh(thornGeo, thornMat);
-      const dir = new THREE.Vector3(Math.cos(a), 0.45, Math.sin(a)).normalize();
-      thorn.position.copy(curve.getPoint(t)).addScaledVector(dir, 0.06);
-      thorn.quaternion.setFromUnitVectors(up, dir);
-      holder.add(thorn);
+    // Nine cream-peach roses (local -z is the top of the face as the viewer sees it)
+    const cream = this.rosePalette('cream');
+    [
+      [0, -0.02], [-0.27, -0.58], [0.33, -0.62], [-0.82, -0.48], [0.82, -0.42],
+      [-0.62, 0.1], [0.6, 0.12], [-0.25, 0.54], [0.3, 0.56]
+    ].forEach(([x, z]) => {
+      const { flower, petals } = this.buildRoseFlower(24, cream, { openness: 0.75, sepals: false });
+      bouquet.add(place(flower, x, z, -0.1, 0.32));
+      this.bouquetRoses.push({ petals, bloomDelay: Math.hypot(x, z) * 0.3 });
     });
 
-    // Two leaf sprigs reaching out from the stem
-    [[0.36, 0.5], [0.6, 3.5]].forEach(([t, yaw]) => {
-      const leaf = this.buildRoseLeaf(greenMat);
-      leaf.position.copy(curve.getPoint(t));
-      leaf.rotation.set(0, -yaw, 0.15);
-      leaf.scale.setScalar(1.15);
-      holder.add(leaf);
+    // Everything that never moves is baked into one mesh: carnations, daisies, greenery, stem ends
+    const statics = new THREE.Group();
+    const carnation = this.rosePalette('carnation');
+    [
+      // a ring around the roses, a few tucked into the gaps, and a lower row under the lining
+      [-1.25, -0.05, 0.23], [-1.12, 0.48, 0.23], [-0.72, 0.8, 0.23], [-0.2, 1.02, 0.23], [0.36, 1.02, 0.23],
+      [0.86, 0.74, 0.23], [1.22, 0.36, 0.23], [1.28, -0.16, 0.23], [1.1, -0.74, 0.23], [0.6, -1.08, 0.23],
+      [0.03, -1.15, 0.23], [-0.55, -1.07, 0.23], [-1.08, -0.82, 0.23],
+      [-0.32, -0.2, 0.16], [0.33, -0.22, 0.16], [0.02, 0.38, 0.16],
+      [-1.55, 0.3, 0.2], [-1.4, -0.65, 0.2], [-0.9, 1.25, 0.2], [0.1, 1.5, 0.2], [0.95, 1.2, 0.2],
+      [1.5, 0.15, 0.2], [1.35, -0.8, 0.2], [0.35, -1.5, 0.2], [-0.45, -1.48, 0.2]
+    ].forEach(([x, z, size]) => {
+      statics.add(place(this.buildCarnation(carnation), x, z, Math.hypot(x, z) > 1.4 ? -0.08 : -0.02, size));
+    });
+    [[-0.6, -0.3], [0.55, -0.28]].forEach(([x, z]) => {
+      statics.add(place(this.buildDaisy(), x, z, 0.14, 0.45));
     });
 
-    flower.position.y = stemHeight;
-    flower.scale.setScalar(1.4);
-    holder.add(flower);
+    // Wispy greenery spraying out past the paper, mostly toward the top and sides
+    const leafLight = new THREE.Color(0xb7dc7e);
+    const leafGeo = this.buildCurvedSurface(4, 6, (u, v, col) => {
+      const x = u * 0.22 * Math.pow(Math.sin(Math.PI * v), 0.8);
+      col.setHex(0x8cc152).lerp(leafLight, 1 - Math.abs(u));
+      return { x, y: v, z: Math.abs(x) * 0.3 };
+    });
+    const budGeo = new THREE.SphereGeometry(1, 8, 6);
+    for (let i = 0; i < 22; i++) {
+      const a = (i / 22) * Math.PI * 2 + Math.random() * 0.2;
+      const towardBottom = Math.max(Math.cos(a), 0);
+      if (towardBottom > 0.5 && i % 2) continue;
+      const radial = new THREE.Vector3(Math.sin(a), 0, Math.cos(a));
+      const across = new THREE.Vector3(radial.z, 0, -radial.x).multiplyScalar((Math.random() - 0.5) * 0.5);
+      const startR = 0.85 + Math.random() * 0.35;
+      const length = (1.1 + Math.random() * 0.6) * (1 - towardBottom * 0.45);
+      const points = [0, 0.33, 0.66, 1].map(t => radial.clone().multiplyScalar(startR + length * t)
+        .addScaledVector(across, t * t)
+        .setY(domeHeight(startR) + t * 0.55 + Math.sin(t * Math.PI) * 0.12));
+      statics.add(this.buildSprig(new THREE.CatmullRomCurve3(points), leafGeo, budGeo));
+    }
+    // Short green sprigs peeking between the flowers
+    for (let i = 0; i < 9; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const r = 0.3 + Math.random() * 0.9;
+      const base = new THREE.Vector3(Math.sin(a) * r, domeHeight(r) + 0.05, Math.cos(a) * r);
+      const tip = base.clone().add(new THREE.Vector3(Math.sin(a) * 0.3, 0.32, Math.cos(a) * 0.3));
+      const mid = base.clone().lerp(tip, 0.5).add(new THREE.Vector3(0, 0.05, 0));
+      statics.add(this.buildSprig(new THREE.CatmullRomCurve3([base, mid, tip]), leafGeo, budGeo));
+    }
 
-    this.roseGardenGroup.add(holder);
-    this.gardenRoses.push({ holder, petals, bloomDelay: 0, phase: Math.random() * Math.PI * 2 });
+    // Cut stem ends peeking out of the bottom of the handle
+    const stemGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.5, 10);
+    for (let i = 0; i < 7; i++) {
+      const a = (i / 7) * Math.PI * 2;
+      const stem = new THREE.Mesh(stemGeo);
+      stem.position.set(Math.sin(a) * 0.12, -2.62 - (i % 3) * 0.04, Math.cos(a) * 0.12);
+      stem.userData.color = new THREE.Color(0x5e9a46);
+      statics.add(stem);
+    }
 
-    this.roseGardenGroup.scale.set(0.001, 0.001, 0.001);
-    this.roseGardenGroup.visible = false;
-    this.scene.add(this.roseGardenGroup);
+    bouquet.add(new THREE.Mesh(this.bakeGroup(statics), new THREE.MeshStandardMaterial({
+      vertexColors: true, roughness: 0.6, side: THREE.DoubleSide
+    })));
+
+    // Wrapping: white paper collar with a rolled rim, crinkled pink lining, white paper handle
+    const paperMat = (color, glow) => new THREE.MeshStandardMaterial({
+      color, vertexColors: true, roughness: 0.85, side: THREE.DoubleSide, emissive: color, emissiveIntensity: glow
+    });
+    const collarGeo = this.buildRevolvedSurface([
+      [0.27, -1.5], [0.5, -1.12], [0.9, -0.68], [1.35, -0.3], [1.8, 0.02],
+      [2.15, 0.26], [2.32, 0.4], [2.4, 0.43], [2.45, 0.35]
+    ], 160, 34, (theta, v, r, y, col) => {
+      col.setScalar(0.8 + 0.2 * smooth(v, 0, 0.5)); // paper gathered at the handle sits in shadow
+      return {
+        r: r * (1 + 0.045 * Math.sin(theta * 6 + 0.7) * smooth(v, 0.15, 1) + 0.12 * Math.sin(theta * 10) * (1 - smooth(v, 0, 0.3))),
+        y: y + 0.07 * Math.sin(theta * 3 + 0.4) * smooth(v, 0.55, 1)
+      };
+    });
+    bouquet.add(new THREE.Mesh(collarGeo, paperMat(0xfffcfa, 0.22)));
+
+    const liningGeo = this.buildRevolvedSurface([
+      [1.05, -0.28], [1.3, -0.1], [1.55, 0.06], [1.78, 0.22], [1.88, 0.3], [1.93, 0.26]
+    ], 280, 14, (theta, v, r, y, col) => {
+      const crinkle = Math.sin(theta * 42 + 4 * Math.sin(theta * 3));
+      col.setScalar(0.9 + 0.1 * crinkle);
+      return {
+        r: r + 0.03 * crinkle * smooth(v, 0.15, 1),
+        y: y + 0.03 * Math.sin(theta * 29 + v * 8) * smooth(v, 0.3, 1)
+      };
+    });
+    bouquet.add(new THREE.Mesh(liningGeo, paperMat(0xf9c3d1, 0.12)));
+
+    const sleeveGeo = this.buildRevolvedSurface([
+      [0.34, -1.36], [0.26, -1.56], [0.25, -1.85], [0.29, -2.3], [0.36, -2.7], [0.41, -2.78]
+    ], 72, 20, (theta, v, r, y, col) => {
+      col.setScalar(0.86 + 0.14 * v);
+      return { r: r * (1 + 0.1 * Math.sin(theta * 9 + v * 2)), y };
+    });
+    bouquet.add(new THREE.Mesh(sleeveGeo, paperMat(0xfffaf7, 0.2)));
+
+    // Satin ribbons: pink and white bands, a double bow at the front and long trailing tails
+    const satin = (color, glow) => new THREE.MeshStandardMaterial({
+      color, roughness: 0.32, metalness: 0.15, side: THREE.DoubleSide, emissive: color, emissiveIntensity: glow
+    });
+    const pinkSatin = satin(0xf29fb5, 0.1);
+    const whiteSatin = satin(0xffffff, 0.18);
+    const bandPink = new THREE.Mesh(new THREE.CylinderGeometry(0.285, 0.28, 0.08, 48, 1, true), pinkSatin);
+    bandPink.position.y = -1.53;
+    const bandWhite = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.275, 0.05, 48, 1, true), whiteSatin);
+    bandWhite.position.y = -1.6;
+    bouquet.add(bandPink, bandWhite);
+
+    const bow = new THREE.Group();
+    bow.position.set(0, -1.56, 0.3);
+    bouquet.add(bow);
+
+    const pinkLoop = this.buildBowLoopGeometry(0.42, 0.1, 0.075);
+    const whiteLoop = this.buildBowLoopGeometry(0.32, 0.08, 0.06);
+    [-1, 1].forEach(side => {
+      [[pinkLoop, pinkSatin, 0.3, 0], [whiteLoop, whiteSatin, 0.75, 0.025]].forEach(([geo, mat, lift, front]) => {
+        const loop = new THREE.Mesh(geo, mat);
+        loop.scale.x = -side;
+        loop.rotation.z = side * lift;
+        loop.position.z = front;
+        bow.add(loop);
+      });
+    });
+    const knot = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), pinkSatin);
+    knot.scale.set(0.05, 0.06, 0.045);
+    knot.position.z = 0.03;
+    bow.add(knot);
+
+    const front = new THREE.Vector3(0, 0, 1);
+    [
+      [-0.05, 1.55, 0.07, pinkSatin, 0.6], [0.06, 1.75, 0.07, pinkSatin, -0.5],
+      [-0.14, 1.35, 0.055, whiteSatin, -0.4], [0.16, 1.5, 0.055, whiteSatin, 0.7]
+    ].forEach(([x, length, width, mat, twist]) => {
+      const tail = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(x * 0.2, 0, 0.02),
+        new THREE.Vector3(x * 0.8, -length * 0.3, 0.06),
+        new THREE.Vector3(x * 1.4 - 0.03, -length * 0.62, 0.03),
+        new THREE.Vector3(x * 2, -length, 0.07)
+      ]);
+      const tangent = new THREE.Vector3();
+      const geo = this.buildRibbonGeometry(tail, width, (t, out) => {
+        tail.getTangent(t, tangent);
+        return out.crossVectors(tangent, front).normalize().applyAxisAngle(tangent, twist * t);
+      }, 0.1);
+      bow.add(new THREE.Mesh(geo, mat));
+    });
+
+    const card = this.buildGiftCard();
+    card.position.set(0.16, -0.5, 0.06);
+    card.rotation.set(-0.05, 0, 0.1);
+    bow.add(card);
+
+    this.roseBouquetGroup.scale.set(0.001, 0.001, 0.001);
+    this.roseBouquetGroup.visible = false;
+    this.scene.add(this.roseBouquetGroup);
   }
 
-  // Warm glow at the heart, vivid rose body, deep crimson rims
-  rosePalette() {
+  // Flower colours: a glow at the heart of each bloom, the body colour and the rim colour.
+  // `heart` (optional) tints the innermost rose petals.
+  rosePalette(kind = 'crimson') {
+    const palettes = {
+      crimson: { base: 0xffb28c, body: 0xd8183d, rim: 0x7c0822, glow: 0x3a0612 },
+      cream: { base: 0xffd8c6, body: 0xfbe0d3, rim: 0xfff4ec, heart: 0xeba39c, glow: 0x24120c },
+      carnation: { base: 0xe27f8c, body: 0xf5a2ab, rim: 0xfccbcd, glow: 0x2a0c10 }
+    };
+    const p = palettes[kind];
     return {
-      base: new THREE.Color(0xffc9a6),
-      body: new THREE.Color(0xf0385f),
-      rim: new THREE.Color(0x9e0f35),
-      glow: 0x3a0612
+      base: new THREE.Color(p.base),
+      body: new THREE.Color(p.body),
+      rim: new THREE.Color(p.rim),
+      heart: p.heart !== undefined ? new THREE.Color(p.heart) : null,
+      glow: p.glow
     };
   }
 
@@ -804,7 +1169,7 @@ class Scene3DManager {
     const MODE_LAYOUT = {
       gift: { gift: 1 },
       heart: { heart: 1 },
-      rose: { rose: 1.2 },
+      rose: { rose: 1 },
       rain: { gift: 0.85 } // zoom out for majestic panoramic view
     };
     const CAMERA_POS = {
@@ -813,7 +1178,7 @@ class Scene3DManager {
       rose: [0, 2.6, 10.5],
       rain: [0, 4, 16]
     };
-    const groups = { gift: this.giftBoxGroup, heart: this.heartRoseGroup, rose: this.roseGardenGroup };
+    const groups = { gift: this.giftBoxGroup, heart: this.heartRoseGroup, rose: this.roseBouquetGroup };
     const layout = MODE_LAYOUT[mode] || MODE_LAYOUT.gift;
 
     Object.keys(groups).forEach(key => {
@@ -828,7 +1193,7 @@ class Scene3DManager {
       }
     });
 
-    // Rose garden blooms again from bud every time it is shown
+    // Bouquet roses bloom again from bud every time it is shown
     if (mode === 'rose') this.roseBloom = 0;
 
     // Move camera smoothly
@@ -1026,16 +1391,14 @@ class Scene3DManager {
       }
     }
 
-    // 2b. Blooming Rose Garden
-    if (this.roseGardenGroup && this.roseGardenGroup.visible) {
-      this.roseGardenGroup.rotation.y = elapsedTime * 0.18;
+    // 2b. Rose Bouquet: sways gently from side to side while every rose blooms from bud
+    if (this.roseBouquetGroup && this.roseBouquetGroup.visible) {
+      this.bouquetSway.rotation.y = Math.sin(elapsedTime * 0.4) * 0.25;
+      this.bouquetSway.rotation.z = Math.sin(elapsedTime * 0.7) * 0.03;
+      this.bouquetSway.position.y = Math.sin(elapsedTime * 1.1) * 0.06;
       this.roseBloom = Math.min(this.roseBloom + delta * 0.22, 1.6);
 
-      this.gardenRoses.forEach(rose => {
-        // Gentle breeze sway
-        rose.holder.rotation.z = Math.sin(elapsedTime * 0.9 + rose.phase) * 0.05;
-        rose.holder.rotation.x = Math.cos(elapsedTime * 0.7 + rose.phase) * 0.03;
-
+      this.bouquetRoses.forEach(rose => {
         const local = Math.min(Math.max(this.roseBloom - rose.bloomDelay, 0), 1);
         const open = 1 - Math.pow(1 - local, 3); // ease out
         rose.petals.forEach(petal => {
@@ -1109,9 +1472,9 @@ class Scene3DManager {
         this.targetCameraPos = null;
       }
     } else if (!this.controls || !this.controls.state || this.controls.state === -1) {
-      // Subtle organic mouse parallax
-      const parallaxTargetX = this.mouse.x * 1.2;
-      const parallaxTargetY = 2.5 + this.mouse.y * 0.8;
+      // Subtle organic mouse parallax (targetMouse stays centred until the mouse first moves)
+      const parallaxTargetX = this.targetMouse.x * 1.2;
+      const parallaxTargetY = 2.5 + this.targetMouse.y * 0.8;
       this.camera.position.x += (parallaxTargetX - this.camera.position.x) * 0.03;
       this.camera.position.y += (parallaxTargetY - this.camera.position.y) * 0.03;
       this.camera.lookAt(0, 0.5, 0);
