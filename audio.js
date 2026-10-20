@@ -95,6 +95,55 @@ class SoundEngine {
     }
   }
 
+  // Cute frog "ribbit": two short buzzy chirps with a fast flutter
+  playCroak() {
+    this.init();
+    if (this.isMuted || !this.ctx) return;
+
+    try {
+      [0, 0.17].forEach(offset => {
+        const t = this.ctx.currentTime + offset;
+        const osc = this.ctx.createOscillator();
+        const filter = this.ctx.createBiquadFilter();
+        const flutter = this.ctx.createGain();
+        const flutterLfo = this.ctx.createOscillator();
+        const flutterDepth = this.ctx.createGain();
+        const envelope = this.ctx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(230, t);
+        osc.frequency.exponentialRampToValueAtTime(150, t + 0.12);
+
+        filter.type = 'bandpass';
+        filter.frequency.value = 850;
+        filter.Q.value = 2.5;
+
+        // Gain swings between 0 and 1 about 38 times a second for the throaty "rrr"
+        flutter.gain.value = 0.5;
+        flutterLfo.frequency.value = 38;
+        flutterDepth.gain.value = 0.5;
+        flutterLfo.connect(flutterDepth);
+        flutterDepth.connect(flutter.gain);
+
+        envelope.gain.setValueAtTime(0.0001, t);
+        envelope.gain.exponentialRampToValueAtTime(0.12, t + 0.015);
+        envelope.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+
+        osc.connect(filter);
+        filter.connect(flutter);
+        flutter.connect(envelope);
+        envelope.connect(this.ctx.destination);
+
+        osc.start(t);
+        flutterLfo.start(t);
+        osc.stop(t + 0.15);
+        flutterLfo.stop(t + 0.15);
+      });
+    } catch (e) {
+      // Audio fallback quiet
+    }
+  }
+
   // Soft Button Tap Feedback
   playTapSound() {
     this.init();

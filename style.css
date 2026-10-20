@@ -3345,7 +3345,7 @@ html, body {
 
 @media (max-width: 600px) {
   .scene-controls-hud {
-    display: flex; /* vẫn hiện để chọn được chế độ Hoa Hồng trên điện thoại */
+    display: flex; /* vẫn hiện để chọn được chế độ Bó Hoa trên điện thoại */
     max-width: none;
   }
   .hud-tooltip {
@@ -3383,5 +3383,420 @@ html, body {
   .gr-stem, .gr-leaf, .gr-head {
     animation-duration: 0.01s !important;
     animation-iteration-count: 1 !important;
+  }
+}
+
+/* ===================================================================
+   HỒ SEN NHỎ · Ếch xanh nhảy giữa các lá sen, bắt ruồi, kêu ộp ộp
+   =================================================================== */
+.frog-pond {
+  position: fixed;
+  left: 150px;
+  bottom: 188px;
+  width: 240px;
+  height: 110px;
+  z-index: 45;
+  pointer-events: none;
+  transform-origin: bottom left;
+}
+
+.pond-scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.pond-grass { fill: var(--bush); transition: fill 1.2s; }
+.pond-bank { fill: #c9ad7f; }
+.pond-water { fill: url(#pondWaterFill); pointer-events: auto; cursor: pointer; }
+.pond-shine {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.7);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  animation: pondShine 4s ease-in-out infinite alternate;
+}
+.pond-stone { fill: #a9a39a; }
+.pond-stone-light { fill: #cdc8bf; }
+
+.lily-pad {
+  fill: #5fae55;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: lilyBob 3.6s ease-in-out infinite alternate;
+  animation-delay: var(--d);
+}
+.pad-vein { fill: none; stroke: #8fd07c; stroke-width: 1; stroke-linecap: round; }
+.lotus-petal { fill: #f7a8c0; stroke: #ffd9e4; stroke-width: 0.6; }
+.lotus-petal.back { fill: #f08fae; }
+.lotus-heart { fill: #ffd76a; }
+
+.pond-reeds {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: gentleSway 3.8s ease-in-out infinite alternate;
+}
+.pond-reeds.slow { animation-duration: 5.2s; animation-delay: -1.5s; }
+.reed-blade { fill: none; stroke: #6aa85a; stroke-width: 2.4; stroke-linecap: round; }
+.cattail { fill: #9a6b45; }
+
+@keyframes pondShine {
+  from { opacity: 0.35; }
+  to { opacity: 0.9; }
+}
+
+@keyframes lilyBob {
+  from { transform: translateY(-0.6px) rotate(-1.5deg); }
+  to { transform: translateY(0.8px) rotate(1.5deg); }
+}
+
+/* Gợn nước lan ra khi ếch đáp xuống hoặc chạm vào mặt hồ */
+.pond-ripples {
+  position: absolute;
+  inset: 0;
+}
+
+.pond-ripple {
+  position: absolute;
+  width: 28px;
+  height: 9px;
+  margin: -4.5px 0 0 -14px;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  animation: pondRipple 1.4s ease-out forwards;
+}
+
+@keyframes pondRipple {
+  from { transform: scale(0.2); opacity: 1; }
+  to { transform: scale(1.9); opacity: 0; }
+}
+
+/* Chú ruồi nhỏ bay vòng vòng để ếch đớp */
+.pond-fly {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #4a4038;
+  animation: pondFlyPath 7s linear infinite;
+  transition: opacity 0.2s;
+}
+
+.pond-fly::before,
+.pond-fly::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  width: 5px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  animation: wingFlap 0.08s linear infinite alternate;
+}
+.pond-fly::before { left: -3px; transform-origin: right bottom; }
+.pond-fly::after { left: 3px; transform-origin: left bottom; }
+.pond-fly.is-caught { opacity: 0; }
+
+@keyframes pondFlyPath {
+  0%   { transform: translate(60px, 26px); }
+  15%  { transform: translate(92px, 12px); }
+  30%  { transform: translate(128px, 22px); }
+  45%  { transform: translate(168px, 10px); }
+  60%  { transform: translate(184px, 34px); }
+  75%  { transform: translate(140px, 40px); }
+  90%  { transform: translate(96px, 34px); }
+  100% { transform: translate(60px, 26px); }
+}
+
+/* Chuồn chuồn lượn trên mặt hồ */
+.pond-dragonfly {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 20px;
+  height: 12px;
+  animation: dragonflyPath 16s ease-in-out infinite;
+}
+
+.pond-dragonfly i {
+  position: absolute;
+  left: 2px;
+  top: 5px;
+  width: 18px;
+  height: 3px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #2f7fb3, #67c4e8);
+}
+
+.pond-dragonfly i::before {
+  content: "";
+  position: absolute;
+  left: -3px;
+  top: -1.5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #2f7fb3;
+}
+
+.pond-dragonfly::before,
+.pond-dragonfly::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  width: 9px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(220, 242, 255, 0.75);
+  border: 1px solid rgba(120, 180, 220, 0.6);
+  animation: dragonflyWings 0.09s linear infinite alternate;
+}
+.pond-dragonfly::before { top: -8px; transform-origin: center bottom; }
+.pond-dragonfly::after { top: 6px; transform-origin: center top; }
+
+@keyframes dragonflyWings {
+  from { transform: scaleY(1); }
+  to { transform: scaleY(0.35); }
+}
+
+@keyframes dragonflyPath {
+  0%, 8%   { transform: translate(18px, -6px); }
+  25%, 33% { transform: translate(110px, -18px) rotate(6deg); }
+  50%, 58% { transform: translate(196px, -2px) scaleX(-1); }
+  75%, 83% { transform: translate(120px, -24px) scaleX(-1) rotate(-6deg); }
+  100%     { transform: translate(18px, -6px); }
+}
+
+/* Chú ếch xanh (left/top là điểm giữa hai bàn chân) */
+.frog {
+  --frog: #6cc45a;
+  --frog-light: #a6e488;
+  --frog-dark: #3f9446;
+  position: absolute;
+  left: 70px;
+  top: 75px;
+  width: 40px;
+  height: 34px;
+  margin: -34px 0 0 -20px;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: left 0.55s linear, top 0.55s linear;
+}
+
+.frog-small {
+  --frog: #8ccf5c;
+  --frog-light: #c3ec9a;
+  --frog-dark: #5aa046;
+  transform: scale(0.82);
+  transform-origin: 50% 100%;
+}
+
+.frog-hop {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 100%;
+  animation: frogBreathe 2.4s ease-in-out infinite;
+}
+
+.frog.is-hopping .frog-hop { animation: frogHop 0.55s ease-out; }
+
+.frog-legs::before,
+.frog-legs::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  width: 15px;
+  height: 11px;
+  border-radius: 50% 50% 40% 40%;
+  background: var(--frog-dark);
+}
+.frog-legs::before { left: 1px; }
+.frog-legs::after { right: 1px; }
+
+.frog-body {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: 2px;
+  height: 23px;
+  border-radius: 50% 50% 45% 45% / 58% 58% 42% 42%;
+  background: radial-gradient(circle at 50% 30%, var(--frog-light), var(--frog) 62%, var(--frog-dark));
+}
+
+.frog-belly {
+  position: absolute;
+  left: 50%;
+  bottom: 1px;
+  width: 18px;
+  height: 11px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: #ecf9cf;
+}
+
+.frog-sac {
+  position: absolute;
+  left: 50%;
+  top: 22px;
+  width: 14px;
+  height: 10px;
+  margin-left: -7px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #ffffff, #e6f7b8);
+  transform: scale(0);
+}
+
+.frog.is-croaking .frog-sac { animation: frogCroak 0.9s ease-in-out; }
+
+.frog-eye {
+  position: absolute;
+  top: 0;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 30%, var(--frog-light), var(--frog));
+}
+.frog-eye.l { left: 4px; }
+.frog-eye.r { right: 4px; }
+
+.frog-eye::before,
+.frog-eye::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  animation: frogBlink 4.6s infinite;
+}
+.frog-eye::before { left: 2.5px; top: 2.5px; width: 10px; height: 10px; background: #fff; }
+.frog-eye::after { left: 5px; top: 4.5px; width: 5px; height: 6px; background: #2b2b2b; }
+
+/* Đớp được ruồi thì híp mắt cười */
+.frog.is-gulping .frog-eye::before {
+  top: 6px;
+  height: 4px;
+  border-radius: 4px 4px 0 0;
+  border-top: 2px solid #2b2b2b;
+  background: transparent;
+}
+.frog.is-gulping .frog-eye::after { opacity: 0; }
+
+.frog-mouth {
+  position: absolute;
+  left: 50%;
+  top: 16px;
+  width: 14px;
+  height: 6px;
+  transform: translateX(-50%);
+  border-bottom: 2px solid #2c6a33;
+  border-radius: 0 0 50% 50%;
+}
+
+.frog-blush {
+  position: absolute;
+  top: 17px;
+  width: 6px;
+  height: 3.5px;
+  border-radius: 50%;
+  background: rgba(255, 130, 155, 0.7);
+}
+.frog-blush.l { left: 7px; }
+.frog-blush.r { right: 7px; }
+
+.frog-tongue {
+  position: absolute;
+  left: calc(50% - 1.5px);
+  bottom: 13px;
+  width: 3px;
+  height: 0;
+  border-radius: 2px;
+  background: #f06d8f;
+  transform: rotate(var(--tongue-angle, 0deg));
+  transform-origin: 50% 100%;
+  transition: height 0.12s ease-out;
+}
+
+.frog-tongue::after {
+  content: "";
+  position: absolute;
+  left: -1.5px;
+  top: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f06d8f;
+}
+
+.frog-say {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  padding: 1px 7px;
+  border-radius: 10px;
+  border: 2px solid #b9e3a1;
+  background: #fff;
+  color: #3f8a3a;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-50%, 6px) scale(0.6);
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+}
+
+.frog.is-croaking .frog-say {
+  opacity: 1;
+  transform: translate(-50%, -2px) scale(1);
+}
+
+@keyframes frogBreathe {
+  0%, 100% { transform: scale(1, 1); }
+  50% { transform: scale(1.02, 0.97); }
+}
+
+@keyframes frogHop {
+  0%   { transform: translateY(0) scale(1.06, 0.88); }
+  20%  { transform: translateY(-14px) scale(0.94, 1.1); }
+  50%  { transform: translateY(-30px) scale(0.96, 1.06); }
+  85%  { transform: translateY(-3px) scale(1.04, 0.94); }
+  100% { transform: translateY(0) scale(1, 1); }
+}
+
+@keyframes frogCroak {
+  0%, 100% { transform: scale(0); }
+  25%, 70% { transform: scale(1.15); }
+  45% { transform: scale(0.6); }
+}
+
+@keyframes frogBlink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+
+@media (max-width: 900px) {
+  .frog-pond {
+    left: 4px;
+    bottom: 112px;
+    transform: scale(0.8);
+  }
+  /* Màn hẹp: khung mở quà phủ lên hồ cho gọn, mở quà xong hồ hiện đầy đủ */
+  .gift-callout:not(.hidden) ~ .frog-pond {
+    z-index: 35;
+  }
+}
+
+@media (max-width: 600px) {
+  .frog-pond {
+    bottom: 100px;
+    transform: scale(0.62);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frog-pond *, .frog-pond *::before, .frog-pond *::after {
+    animation: none !important;
   }
 }

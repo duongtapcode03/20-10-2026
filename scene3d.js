@@ -610,7 +610,7 @@ class Scene3DManager {
       const seed = Math.random() * 10;
       return this.buildCurvedSurface(28, 7, (u, v, col) => {
         const edge = smooth(v, 0.5, 1);
-        const pinked = 1 + 0.05 * Math.sin(u * 34 + seed) * edge;
+        const pinked = 1 + 0.035 * Math.sin(u * 34 + seed) * edge;
         const phi = u * 1.1;
         const rho = v * (1 - 0.12 * u * u) * pinked;
         const x = Math.sin(phi) * rho;
@@ -621,7 +621,7 @@ class Scene3DManager {
       });
     }, {
       offset: (layer) => 0.02 + layer * 0.08,
-      tilt: (layer) => 0.55 + layer * 0.9,
+      tilt: (layer) => 0.75 + layer * 0.75 + (Math.random() - 0.5) * 0.25,
       size: (layer) => 0.4 + layer * 0.55
     });
   }
@@ -673,7 +673,7 @@ class Scene3DManager {
       const leaf = new THREE.Mesh(leafGeo);
       leaf.position.copy(curve.getPoint(t));
       leaf.quaternion.setFromUnitVectors(up, dir).premultiply(roll.setFromAxisAngle(dir, Math.random() * Math.PI));
-      leaf.scale.setScalar(0.09 + Math.random() * 0.05);
+      leaf.scale.setScalar(0.06 + Math.random() * 0.04);
       sprig.add(leaf);
       flip = -flip;
     }
@@ -693,10 +693,11 @@ class Scene3DManager {
       sprig.add(this.buildSprig(branch, leafGeo, budGeo, 0));
     }
 
-    const tip = curve.getPoint(1);
-    for (let k = 0; k < 4; k++) {
+    // Tiny round buds clustered toward the tip
+    for (let k = 0; k < 7; k++) {
       const bud = new THREE.Mesh(budGeo);
-      bud.position.copy(tip).add(new THREE.Vector3((Math.random() - 0.5) * 0.06, Math.random() * 0.04, (Math.random() - 0.5) * 0.06));
+      bud.position.copy(curve.getPoint(1 - k * 0.04))
+        .add(new THREE.Vector3((Math.random() - 0.5) * 0.06, Math.random() * 0.04, (Math.random() - 0.5) * 0.06));
       bud.scale.setScalar(0.012 + Math.random() * 0.008);
       bud.userData.color = new THREE.Color(0xc8e283);
       sprig.add(bud);
@@ -835,7 +836,7 @@ class Scene3DManager {
     const leafShadow = new THREE.Color(0x4f6b3a);
     const pinkShadow = new THREE.Color(0xa3606c);
     statics.add(new THREE.Mesh(this.buildRevolvedSurface([
-      [0.02, 0.12], [0.6, 0.1], [1.0, 0.05], [1.3, -0.02], [1.5, -0.1], [1.65, -0.16]
+      [0.02, 0.12], [0.6, 0.1], [1.0, 0.06], [1.25, 0.02], [1.4, 0.0]
     ], 48, 12, (theta, v, r, y, col) => {
       col.copy(leafShadow).lerp(pinkShadow, 0.5 + 0.5 * Math.sin(theta * 7 + v * 9)).multiplyScalar(0.75);
       return { r, y };
@@ -844,7 +845,7 @@ class Scene3DManager {
     // Wispy greenery spraying out past the paper, mostly toward the top and sides
     const leafLight = new THREE.Color(0xb7dc7e);
     const leafGeo = this.buildCurvedSurface(4, 6, (u, v, col) => {
-      const x = u * 0.22 * Math.pow(Math.sin(Math.PI * v), 0.8);
+      const x = u * 0.17 * Math.pow(Math.sin(Math.PI * v), 0.8);
       col.setHex(0x8cc152).lerp(leafLight, 1 - Math.abs(u));
       return { x, y: v, z: Math.abs(x) * 0.3 };
     });
@@ -878,7 +879,7 @@ class Scene3DManager {
     for (let i = 0; i < 7; i++) {
       const a = (i / 7) * Math.PI * 2;
       const stem = new THREE.Mesh(stemGeo);
-      stem.position.set(Math.sin(a) * 0.12, -2.62 - (i % 3) * 0.04, Math.cos(a) * 0.12);
+      stem.position.set(Math.sin(a) * 0.12, -2.98 - (i % 3) * 0.04, Math.cos(a) * 0.12);
       stem.userData.color = new THREE.Color(0x5e9a46);
       statics.add(stem);
     }
@@ -916,7 +917,7 @@ class Scene3DManager {
     bouquet.add(new THREE.Mesh(liningGeo, paperMat(0xf9c3d1, 0.12)));
 
     const sleeveGeo = this.buildRevolvedSurface([
-      [0.34, -1.36], [0.26, -1.56], [0.25, -1.85], [0.29, -2.3], [0.36, -2.7], [0.41, -2.78]
+      [0.34, -1.36], [0.26, -1.56], [0.25, -1.9], [0.29, -2.5], [0.36, -3.05], [0.41, -3.15]
     ], 72, 20, (theta, v, r, y, col) => {
       col.setScalar(0.86 + 0.14 * v);
       return { r: r * (1 + 0.1 * Math.sin(theta * 9 + v * 2)), y };
@@ -957,8 +958,8 @@ class Scene3DManager {
 
     const front = new THREE.Vector3(0, 0, 1);
     [
-      [-0.05, 1.55, 0.07, pinkSatin, 0.6], [0.06, 1.75, 0.07, pinkSatin, -0.5],
-      [-0.14, 1.35, 0.055, whiteSatin, -0.4], [0.16, 1.5, 0.055, whiteSatin, 0.7]
+      [-0.05, 2.0, 0.07, pinkSatin, 0.6], [0.06, 2.25, 0.07, pinkSatin, -0.5],
+      [-0.14, 1.8, 0.055, whiteSatin, -0.4], [0.16, 1.95, 0.055, whiteSatin, 0.7]
     ].forEach(([x, length, width, mat, twist]) => {
       const tail = new THREE.CatmullRomCurve3([
         new THREE.Vector3(x * 0.2, 0, 0.02),
@@ -975,7 +976,7 @@ class Scene3DManager {
     });
 
     const card = this.buildGiftCard();
-    card.position.set(0.16, -0.5, 0.06);
+    card.position.set(0.17, -0.62, 0.06);
     card.rotation.set(-0.05, 0, 0.1);
     bow.add(card);
 
@@ -989,7 +990,7 @@ class Scene3DManager {
   rosePalette(kind = 'crimson') {
     const palettes = {
       crimson: { base: 0xffb28c, body: 0xd8183d, rim: 0x7c0822, glow: 0x3a0612 },
-      cream: { base: 0xe08a72, body: 0xf0b49e, rim: 0xf8d2c0, heart: 0xd47a72, glow: 0x1a0c08 },
+      cream: { base: 0xe7826a, body: 0xf3ae96, rim: 0xfbd6c4, heart: 0xd8706a, glow: 0x1a0c08 },
       carnation: { base: 0xd8546c, body: 0xf28a9c, rim: 0xfab8c2, glow: 0x2a0c10 }
     };
     const p = palettes[kind];
@@ -1197,13 +1198,13 @@ class Scene3DManager {
     const MODE_LAYOUT = {
       gift: { gift: 1 },
       heart: { heart: 1 },
-      rose: { rose: 1 },
+      rose: { rose: 1.25 },
       rain: { gift: 0.85 } // zoom out for majestic panoramic view
     };
     const CAMERA_POS = {
       gift: [0, 2.5, 12],
       heart: [0, 2.2, 11],
-      rose: [0, 2.6, 10.5],
+      rose: [0, 2.4, 10],
       rain: [0, 4, 16]
     };
     const groups = { gift: this.giftBoxGroup, heart: this.heartRoseGroup, rose: this.roseBouquetGroup };

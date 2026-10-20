@@ -224,6 +224,9 @@ class AppController {
 
     // 8. Setup Mascot & Animated Characters Interaction
     this.initMascotAndStickers();
+
+    // 9. Frog pond: frogs hop between lily pads, catch flies and croak
+    this.initFrogPond();
   }
 
   // Smooth Preloader Progress
@@ -772,6 +775,128 @@ class AppController {
         this.spawnMascotHearts(rect.left + rect.width / 2, rect.top + rect.height / 2);
       });
     });
+  }
+
+  // ================= 9b. FROG POND =================
+  // Frogs hop between the lily pads and the stone, snap at the passing fly and croak.
+  // Click a frog to make it jump, or the water to send a frog to the nearest free pad.
+  initFrogPond() {
+    const pond = document.getElementById('frogPond');
+    if (!pond) return;
+    const ripples = document.getElementById('pondRipples');
+    const fly = document.getElementById('pondFly');
+    const water = document.getElementById('pondWaterArea');
+
+    // Where a frog can sit, in pond pixels: three lily pads, the stone and the left bank
+    const spots = [{ x: 70, y: 74 }, { x: 122, y: 88 }, { x: 152, y: 66 }, { x: 207, y: 79 }, { x: 36, y: 72 }];
+    const frogs = [...pond.querySelectorAll('.frog')].map((el, i) => ({ el, spot: i === 0 ? 0 : 3, busy: false }));
+
+    // The pond is scaled down on small screens; convert screen pixels back to pond pixels
+    const scaleOf = () => pond.getBoundingClientRect().width / pond.offsetWidth || 1;
+
+    const ripple = (x, y) => {
+      const r = document.createElement('span');
+      r.className = 'pond-ripple';
+      r.style.left = `${x}px`;
+      r.style.top = `${y}px`;
+      ripples.appendChild(r);
+      setTimeout(() => r.remove(), 1400);
+    };
+
+    const place = (frog) => {
+      frog.el.style.left = `${spots[frog.spot].x}px`;
+      frog.el.style.top = `${spots[frog.spot].y}px`;
+    };
+
+    const replay = (el, cls, ms) => {
+      el.classList.remove(cls);
+      void el.offsetWidth; // trigger reflow so the animation plays again
+      el.classList.add(cls);
+      setTimeout(() => el.classList.remove(cls), ms);
+    };
+
+    const croak = (frog) => replay(frog.el, 'is-croaking', 1000);
+
+    const hop = (frog, target) => {
+      const free = spots.map((_, i) => i).filter(i => !frogs.some(f => f.spot === i));
+      const to = target !== undefined ? target : free[Math.floor(Math.random() * free.length)];
+      if (frog.busy || !free.includes(to)) return;
+      frog.busy = true;
+      frog.spot = to;
+      replay(frog.el, 'is-hopping', 600);
+      place(frog);
+      setTimeout(() => {
+        ripple(spots[to].x, spots[to].y);
+        frog.busy = false;
+      }, 560);
+    };
+
+    const catchFly = (frog) => {
+      if (frog.busy || fly.classList.contains('is-caught')) return;
+      const mouth = frog.el.querySelector('.frog-mouth').getBoundingClientRect();
+      const bug = fly.getBoundingClientRect();
+      const scale = scaleOf();
+      const dx = (bug.left + bug.width / 2 - (mouth.left + mouth.width / 2)) / scale;
+      const dy = (bug.top + bug.height / 2 - (mouth.top + mouth.height / 2)) / scale;
+      const reach = Math.hypot(dx, dy);
+      if (reach > 110 || dy > 0) return; // only snap at a fly that is close and above
+
+      const tongue = frog.el.querySelector('.frog-tongue');
+      frog.busy = true;
+      tongue.style.setProperty('--tongue-angle', `${Math.atan2(dx, -dy) * 180 / Math.PI}deg`);
+      tongue.style.height = `${reach}px`;
+      setTimeout(() => {
+        fly.classList.add('is-caught');
+        tongue.style.height = '0px';
+        replay(frog.el, 'is-gulping', 900);
+      }, 150);
+      setTimeout(() => { frog.busy = false; }, 500);
+      setTimeout(() => fly.classList.remove('is-caught'), 3500);
+    };
+
+    frogs.forEach(place);
+
+    const FROG_WISHES = [
+      'Ếch Xanh: Ộp ộp! Chúc bạn 20/10 vui như ếch gặp mưa! 🐸💚',
+      'Ếch Con: Ộp! Chúc bạn luôn tươi xinh như hoa sen giữa hồ! 🪷',
+      'Ếch Xanh: Ộp ộp ộp! Chúc bạn một ngày ngập tràn tiếng cười! 🐸🌸'
+    ];
+    let wishIdx = 0;
+    frogs.forEach(frog => {
+      frog.el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        croak(frog);
+        hop(frog);
+        if (window.soundEngine) window.soundEngine.playCroak();
+        this.spawnMascotHearts(e.clientX, e.clientY);
+        this.showToast(FROG_WISHES[wishIdx++ % FROG_WISHES.length]);
+      });
+    });
+
+    water.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const rect = pond.getBoundingClientRect();
+      const scale = scaleOf();
+      const x = (e.clientX - rect.left) / scale;
+      const y = (e.clientY - rect.top) / scale;
+      ripple(x, y);
+      const nearest = spots
+        .map((s, i) => ({ i, d: Math.hypot(s.x - x, s.y - y) }))
+        .filter(({ i }) => !frogs.some(f => f.spot === i))
+        .sort((a, b) => a.d - b.d)[0];
+      if (nearest) hop(frogs[Math.floor(Math.random() * frogs.length)], nearest.i);
+    });
+
+    // Pond life: every few seconds a frog hops, croaks or snaps at the fly, and the water stirs
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    setInterval(() => {
+      const frog = frogs[Math.floor(Math.random() * frogs.length)];
+      const roll = Math.random();
+      if (roll < 0.35) hop(frog);
+      else if (roll < 0.65) croak(frog);
+      else catchFly(frog);
+      if (Math.random() < 0.5) ripple(45 + Math.random() * 150, 66 + Math.random() * 20);
+    }, 2600);
   }
 
   spawnMascotHearts(x, y) {
