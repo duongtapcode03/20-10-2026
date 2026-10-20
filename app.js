@@ -510,78 +510,129 @@ class AppController {
     drawCornerPetals(90, h - 90);
     drawCornerPetals(w - 90, h - 90);
 
+    // --- Helper: wrap text into array of lines given maxWidth ---
+    const wrapTextLines = (text, font, maxWidth) => {
+      ctx.font = font;
+      const words = (text || '').split(' ');
+      const lines = [];
+      let ln = '';
+      for (let i = 0; i < words.length; i++) {
+        const test = ln + (ln ? ' ' : '') + words[i];
+        if (ctx.measureText(test).width > maxWidth && ln !== '') {
+          lines.push(ln);
+          ln = words[i];
+        } else {
+          ln = test;
+        }
+      }
+      if (ln) lines.push(ln);
+      return lines;
+    };
+    const maxContentW = w - 200; // 100px padding on each side
+
     // 4. Header Badge
     ctx.fillStyle = '#ff2d75';
     ctx.beginPath();
-    ctx.roundRect(w / 2 - 140, 130, 280, 48, 24);
+    ctx.roundRect(w / 2 - 150, 108, 300, 52, 26);
     ctx.fill();
-
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 22px "Be Vietnam Pro", sans-serif';
     ctx.textAlign = 'center';
-    ctx.letterSpacing = '3px';
-    ctx.fillText('20 THÁNG 10', w / 2, 162);
+    ctx.fillText('20 THÁNG 10', w / 2, 144);
 
-    // 5. Crown Icon / Decor
-    ctx.font = '40px serif';
+    // 5. Crown Icon
+    ctx.font = '44px serif';
     ctx.fillStyle = '#f6d365';
-    ctx.fillText('👑', w / 2, 240);
+    ctx.fillText('\uD83D\uDC51', w / 2, 218);
 
-    // 6. Main Headline
-    ctx.font = 'italic bold 48px "Playfair Display", serif';
+    // 6. Main Headline — wrap at maxContentW, 40px font
+    const headlineLines = wrapTextLines(
+      'Chúc Mừng Ngày Phụ Nữ Việt Nam',
+      'italic bold 40px "Playfair Display", serif',
+      maxContentW
+    );
     ctx.fillStyle = '#ffffff';
-    ctx.fillText('Chúc Mừng Ngày Phụ Nữ Việt Nam', w / 2, 320);
+    ctx.textAlign = 'center';
+    let headlineY = 278;
+    headlineLines.forEach(hl => { ctx.fillText(hl, w / 2, headlineY); headlineY += 50; });
 
-    // 7. Recipient
-    ctx.font = '28px "Be Vietnam Pro", sans-serif';
-    ctx.fillStyle = '#ffccd8';
-    ctx.fillText('Kính gửi:', w / 2, 400);
-
-    ctx.font = 'bold 54px "Dancing Script", cursive, "Playfair Display", serif';
-    ctx.fillStyle = '#f6d365';
-    ctx.fillText(this.displayRecipientName.textContent, w / 2, 470);
-
-    // 8. Wish Message Body (Word Wrapping)
-    ctx.font = 'italic 34px "Be Vietnam Pro", sans-serif';
-    ctx.fillStyle = '#fff5f8';
-    const rawMsg = (this.currentFullMessage || (this.typewriterText ? this.typewriterText.textContent : '')).replace(/^"|"$/g, '');
-    const words = rawMsg.split(' ');
-    let line = '';
-    let currentY = 580;
-    const maxLineWidth = w - 260;
-
-    ctx.save();
-    for (let n = 0; n < words.length; n++) {
-      const testLine = line + words[n] + ' ';
-      const metrics = ctx.measureText(testLine);
-      if (metrics.width > maxLineWidth && n > 0) {
-        ctx.fillText(line, w / 2, currentY);
-        line = words[n] + ' ';
-        currentY += 56;
-      } else {
-        line = testLine;
-      }
-    }
-    ctx.fillText(line, w / 2, currentY);
-    ctx.restore();
-
-    // 9. Sender Signature
+    // 7. "Kính gửi:" label
+    let recipStartY = headlineY + 30;
     ctx.font = '26px "Be Vietnam Pro", sans-serif';
+    ctx.fillStyle = '#ffccd8';
+    ctx.fillText('Kính gửi:', w / 2, recipStartY);
+
+    // 8. Recipient Name — wrap, 44px
+    const recipLines = wrapTextLines(
+      this.displayRecipientName.textContent.trim(),
+      'bold 44px "Dancing Script", cursive',
+      maxContentW
+    );
+    ctx.fillStyle = '#f6d365';
+    let recipY = recipStartY + 52;
+    recipLines.forEach(rl => { ctx.fillText(rl, w / 2, recipY); recipY += 54; });
+
+    // 9. Separator
+    let sepY = recipY + 20;
+    ctx.strokeStyle = 'rgba(246,211,101,0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(w / 2 - 180, sepY);
+    ctx.lineTo(w / 2 + 180, sepY);
+    ctx.stroke();
+
+    // 10. Wish Message Body — wrap + clamp to avoid overlap with sender block
+    const msgFont = 'italic 30px "Be Vietnam Pro", sans-serif';
+    const rawMsg = (this.currentFullMessage || (this.typewriterText ? this.typewriterText.textContent : '')).replace(/^"|"$/g, '').trim();
+    const msgLines = wrapTextLines(rawMsg, msgFont, maxContentW);
+    const senderBlockH = 200;
+    const msgStartY = sepY + 50;
+    const msgLineH = 48;
+    const maxMsgLines = Math.max(1, Math.floor((h - senderBlockH - msgStartY - 80) / msgLineH));
+    const clampedLines = msgLines.slice(0, maxMsgLines);
+    if (msgLines.length > maxMsgLines && clampedLines.length > 0) {
+      clampedLines[clampedLines.length - 1] = clampedLines[clampedLines.length - 1].replace(/\s*\S+\s*$/, '\u2026');
+    }
+    ctx.font = msgFont;
+    ctx.fillStyle = '#fff5f8';
+    ctx.textAlign = 'center';
+    let msgY = msgStartY;
+    clampedLines.forEach(ml => { ctx.fillText(ml, w / 2, msgY); msgY += msgLineH; });
+
+    // 11. Sender Signature — below message, never above reserved bottom area
+    const senderStartY = Math.max(msgY + 40, h - senderBlockH);
+    ctx.strokeStyle = 'rgba(255,182,193,0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(w - 420, senderStartY);
+    ctx.lineTo(w - 100, senderStartY);
+    ctx.stroke();
+    ctx.font = '24px "Be Vietnam Pro", sans-serif';
     ctx.fillStyle = '#ffb8d2';
     ctx.textAlign = 'right';
-    ctx.fillText('Gửi trọn yêu thương từ:', w - 160, h - 230);
-
-    ctx.font = 'bold 50px "Great Vibes", cursive, "Playfair Display", serif';
+    ctx.fillText('Gửi trọn yêu thương từ:', w - 100, senderStartY + 38);
+    const senderLines = wrapTextLines(
+      this.displaySenderName.textContent.trim(),
+      'bold 42px "Great Vibes", cursive',
+      500
+    );
     ctx.fillStyle = '#f6d365';
-    ctx.fillText(this.displaySenderName.textContent, w - 160, h - 165);
+    let senderY = senderStartY + 90;
+    senderLines.forEach(sl => { ctx.fillText(sl, w - 100, senderY); senderY += 52; });
 
-    // 10. Trigger Download
+    // 12. Bottom watermark
+    ctx.font = '20px "Be Vietnam Pro", sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.textAlign = 'center';
+    ctx.fillText('\u273F 20 \u00B7 10 \u00B7 Ngày Phụ Nữ Việt Nam \u273F', w / 2, h - 80);
+
+    // 13. Trigger Download
     const link = document.createElement('a');
     link.download = `Thiep-Chuc-Mung-20-10-${Date.now()}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
 
-    this.showToast("Đã tải ảnh thiệp chúc mừng chất lượng cao! 🖼️");
+    this.showToast("Đã tải ảnh thiệp chúc mừng chất lượng cao! \uD83D\uDDBCuFE0F");
   }
 
   // Canvas Cursor Particle Trails (Soft Sparkles & Petal Dust)
