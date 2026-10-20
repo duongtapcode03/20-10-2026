@@ -13,11 +13,10 @@ Một trang web kỷ niệm và tôn vinh ngày Phụ Nữ Việt Nam 20/10 vớ
 ### 2. 🌍 Lời Chúc Mở Đầu: Tôn Vinh Tất Cả Người Phụ Nữ Trong Cuộc Đời
 - Khi mở trang web hoặc bấm mở hộp quà, lời chúc đầu tiên luôn là **lời chúc phổ quát, ấm áp và trọn vẹn nhất** dành cho tất cả những người phụ nữ tuyệt vời:
   > *"Nhân ngày Phụ nữ Việt Nam 20/10, xin gửi trọn vẹn sự yêu thương, trân trọng và lòng biết ơn sâu sắc nhất tới tất cả những người phụ nữ tuyệt vời đã xuất hiện trong cuộc đời tôi..."*
-- **Tùy chọn lời chúc riêng biệt sau đó:** Người dùng có thể dễ dàng chuyển sang các đối tượng riêng biệt qua các nút chọn:
-  - 🌹 **Mẹ Kính Yêu**
-  - 🌸 **Chị & Em Gái**
-  - 💐 **Người Phụ Nữ Trong Đời Tôi**
-  - ✍️ Hoặc bấm **"Tự Viết Lời Chúc"** để thiết kế thiệp riêng và **"Tải Ảnh Thiệp (1080x1350 PNG)"** gửi tặng người thân.
+- **Đổi lời chúc:** bấm **"Lời Chúc Khác"** trên thiệp để xem lời chúc tiếp theo, hoặc **"Tự Viết Lời Chúc"** để thiết kế thiệp riêng và **"Tải Ảnh Thiệp (1080x1350 PNG)"** gửi tặng người thân.
+- **Khu Vườn Nhỏ (cuối trang):** hàng hoa hồng mọc lên rồi nở, chú ong bay lượn và **bé nhím ôm đóa hồng** đi dạo qua lại — nhấp vào bé nhím để bé nhảy lên và tặng lời chúc.
+
+- **Chế độ 3D:** Hộp Quà · Pha Lê Hồng · **Hoa Hồng** (vườn hồng 3D thân dài, từng cánh nở dần, đung đưa theo gió) · Mưa Hoa.
 
 ### 3. 🧚‍♀️ Thế Giới Nhân Vật Hoạt Hình Chuyển Động Dễ Thương
 - **1. Cô Bé Tiên Hoa Bay Lượn Cùng Bóng Bay Tim (Flying Chibi Fairy):**

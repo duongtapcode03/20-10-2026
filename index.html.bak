@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Chúc Mừng Ngày Phụ Nữ Việt Nam 20-10 | Tôn Vinh Phái Đẹp</title>
+  <meta name="description" content="Trang web chúc mừng 20-10 tuyệt đẹp với đồ họa 3D sống động, hiệu ứng hoa hồng nở, hộp quà kỳ diệu và những lời chúc đong đầy yêu thương gửi đến một nửa thế giới.">
+  <meta name="keywords" content="20-10, ngày phụ nữ việt nam, chúc mừng 20-10, thiệp 3D 20-10, lời chúc 20 tháng 10">
+
+  <!-- Google Fonts for Vietnamese support and elegant calligraphy -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600&family=Great+Vibes&family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,400;1,600&family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Three.js 3D Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- OrbitControls for smooth camera manipulation -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="theme-sunset">
+  <!-- Preloader Screen -->
+  <div id="preloader" class="preloader">
+    <div class="loader-content">
+      <div class="blooming-flower-loader">
+        <div class="petal petal-1"></div>
+        <div class="petal petal-2"></div>
+        <div class="petal petal-3"></div>
+        <div class="petal petal-4"></div>
+        <div class="petal petal-5"></div>
+        <div class="loader-core"></div>
+      </div>
+      <h2 class="loader-title">20 · 10</h2>
+      <p class="loader-subtitle">Đang nở những cánh hoa yêu thương...</p>
+      <div class="loader-bar-bg">
+        <div class="loader-bar-fill" id="loaderProgress"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Background Ambient Glow & 3D Canvas -->
+  <div id="canvas-container">
+    <canvas id="webgl-canvas"></canvas>
+  </div>
+
+  <!-- Ambient Light Particles Overlay -->
+  <div class="stardust-overlay" id="stardustOverlay"></div>
+
+  <!-- App Header / Navigation -->
+  <header class="app-header">
+    <div class="logo-area">
+      <div class="logo-badge">
+        <span class="badge-num">20</span>
+        <span class="badge-slash">/</span>
+        <span class="badge-num">10</span>
+      </div>
+      <div class="logo-text">
+        <span class="logo-title">Ngày Phụ Nữ Việt Nam</span>
+        <span class="logo-tagline">Tôn Vinh Vẻ Đẹp & Yêu Thương</span>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <!-- Theme Switcher -->
+      <div class="theme-selector-dropdown">
+        <button id="themeToggleBtn" class="glass-btn icon-btn" title="Đổi không gian ánh sáng" aria-label="Đổi giao diện">
+          <i class="fa-solid fa-palette"></i>
+          <span class="btn-text">Giao diện</span>
+        </button>
+        <div class="theme-menu" id="themeMenu">
+          <div class="theme-option active" data-theme="sunset">
+            <span class="color-dot sunset-dot"></span>
+            <span>Hoàng Hôn Tình Yêu</span>
+          </div>
+          <div class="theme-option" data-theme="midnight">
+            <span class="color-dot midnight-dot"></span>
+            <span>Đêm Tinh Tú Huyền Diệu</span>
+          </div>
+          <div class="theme-option" data-theme="fairy">
+            <span class="color-dot fairy-dot"></span>
+            <span>Vườn Hoa Cổ Tích</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Music Toggle with Visualizer -->
+      <button id="musicToggleBtn" class="glass-btn icon-btn" title="Bật/Tắt nhạc nền" aria-label="Âm nhạc">
+        <div class="music-bars" id="musicBars">
+          <span class="bar bar-1"></span>
+          <span class="bar bar-2"></span>
+          <span class="bar bar-3"></span>
+          <span class="bar bar-4"></span>
+        </div>
+        <span class="btn-text" id="musicLabel">Nhạc Nền</span>
+      </button>
+
+      <!-- Cinematic Film Mode Trigger -->
+      <button id="filmModeBtn" class="glass-btn highlight-film-btn" title="Xem Thước Phim Kỷ Niệm 20-10" aria-label="Thước phim chúc mừng">
+        <i class="fa-solid fa-clapperboard"></i>
+        <span class="btn-text">Thước Phim 20/10</span>
+      </button>
+
+      <!-- Fireworks Trigger -->
+      <button id="fireworksBtn" class="glass-btn icon-btn highlight-btn" title="Bắn pháo hoa cánh hoa 3D" aria-label="Bắn pháo hoa">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        <span class="btn-text">Pháo Hoa</span>
+      </button>
+
+      <!-- Create Custom Card Button -->
+      <button id="openCustomizerBtn" class="glass-btn btn-primary" aria-label="Tạo thiệp gửi người thân">
+        <i class="fa-solid fa-heart"></i>
+        <span>Gửi Lời Chúc</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Interactive 3D Scene Controls HUD -->
+  <aside class="scene-controls-hud">
+    <div class="hud-tooltip">Chế độ 3D:</div>
+    <div class="scene-mode-buttons">
+      <button class="mode-btn active" data-mode="gift" id="modeGiftBtn" title="Hộp Quà Bí Ẩn 3D">
+        <i class="fa-solid fa-gift"></i>
+        <span>Hộp Quà</span>
+      </button>
+      <button class="mode-btn" data-mode="heart" id="modeHeartBtn" title="Trái Tim Pha Lê & Hoa Hồng">
+        <i class="fa-solid fa-gem"></i>
+        <span>Pha Lê Hồng</span>
+      </button>
+      <button class="mode-btn" data-mode="rain" id="modeRainBtn" title="Cơn Mưa Cánh Hoa Bay">
+        <i class="fa-solid fa-spa"></i>
+        <span>Mưa Hoa</span>
+      </button>
+    </div>
+    <div class="hud-hint">
+      <i class="fa-solid fa-hand-pointer"></i> <span>Kéo chuột để xoay 360° · Cuộn để phóng to</span>
+    </div>
+  </aside>
+
+  <!-- Main Hero Interactive Presentation Layer -->
+  <main class="main-content">
+    <!-- Call to Action Floating Banner (When box is unopened) -->
+    <div id="unopenedHint" class="gift-callout pulse-animation">
+      <div class="callout-badge">
+        <i class="fa-solid fa-gift"></i>
+      </div>
+      <div class="callout-content">
+        <h3>Món quà bí mật dành riêng cho bạn!</h3>
+        <p>Nhấp vào <strong>Hộp Quà 3D</strong> hoặc nút bên dưới để mở điều kỳ diệu ✨</p>
+      </div>
+      <button id="heroOpenGiftBtn" class="pulse-glow-btn">
+        <span>Mở Ngay</span>
+        <i class="fa-solid fa-sparkles"></i>
+      </button>
+    </div>
+
+    <!-- 3D Celebratory Card Modal Overlay (Triggered on Gift Box Open) -->
+    <section id="greetingCardOverlay" class="greeting-overlay hidden">
+      <div class="card-backdrop"></div>
+      
+      <div class="card-3d-wrapper" id="card3dWrapper">
+        <div class="luxury-card" id="mainLuxuryCard">
+          <!-- Card Decorative Border & Corners -->
+          <div class="corner-ornament top-left"></div>
+          <div class="corner-ornament top-right"></div>
+          <div class="corner-ornament bottom-left"></div>
+          <div class="corner-ornament bottom-right"></div>
+
+          <!-- Close / Minimize Card Button -->
+          <button id="closeCardBtn" class="card-close-btn" title="Thu nhỏ thiệp để ngắm không gian 3D" aria-label="Đóng thiệp">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+
+          <!-- Floating Ribbons Decor -->
+          <div class="card-header-ornament">
+            <span class="ribbon-tail left"></span>
+            <span class="ribbon-center">20 THÁNG 10</span>
+            <span class="ribbon-tail right"></span>
+          </div>
+
+          <div class="card-inner-body">
+            <div class="card-badge-circle">
+              <i class="fa-solid fa-crown"></i>
+            </div>
+            
+            <h1 class="card-headline">Chúc Mừng Ngày Phụ Nữ Việt Nam</h1>
+            
+            <div class="recipient-display">
+              <span class="to-label">Kính gửi:</span>
+              <span class="to-name" id="displayRecipientName">Người Phụ Nữ Tuyệt Vời Nhất</span>
+            </div>
+
+            <div class="message-quote-box" id="messageQuoteBox" title="Nhấp để hiển thị nhanh toàn bộ lời chúc">
+              <i class="fa-solid fa-quote-left quote-icon quote-open"></i>
+              <p class="card-message" id="displayCardMessage">
+                <span class="typewriter-text" id="typewriterText"></span>
+                <span class="typewriter-cursor" id="typewriterCursor">|</span>
+              </p>
+              <i class="fa-solid fa-quote-right quote-icon quote-close"></i>
+              <div class="typewriter-hint" id="typewriterHint">
+                <i class="fa-solid fa-hand-pointer"></i> Nhấp để đọc ngay
+              </div>
+            </div>
+
+            <div class="sender-signature">
+              <span class="sig-label">Gửi trọn yêu thương từ:</span>
+              <span class="sig-name" id="displaySenderName">Người Luôn Yêu Quý Bạn ❤️</span>
+            </div>
+
+            <!-- Card Interactive Action Buttons -->
+            <div class="card-footer-buttons">
+              <button id="nextWishBtn" class="pill-btn secondary-btn" title="Xem lời chúc khác">
+                <i class="fa-solid fa-shuffle"></i> Lời Chúc Khác
+              </button>
+              <button id="copyWishBtn" class="pill-btn secondary-btn" title="Sao chép lời chúc này">
+                <i class="fa-regular fa-copy"></i> Sao Chép
+              </button>
+              <button id="customizeThisCardBtn" class="pill-btn primary-gradient-btn" title="Sửa tên & tạo thiệp riêng">
+                <i class="fa-solid fa-pen-fancy"></i> Tự Viết Lời Chúc
+              </button>
+              <button id="captureCardBtn" class="pill-btn gold-gradient-btn" title="Tải ảnh thiệp để gửi tặng">
+                <i class="fa-solid fa-download"></i> Tải Ảnh Thiệp
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Category Wish Carousel at Bottom -->
+    <section class="wishes-pill-carousel" id="wishesCarousel">
+      <div class="carousel-title">
+        <span>Chọn lời chúc theo đối tượng:</span>
+      </div>
+      <div class="pill-tags">
+        <button class="wish-pill active" data-category="all">✨ Tất Cả Lời Chúc</button>
+        <button class="wish-pill" data-category="mom">🌹 Mẹ Kính Yêu</button>
+        <button class="wish-pill" data-category="sister">🌸 Chị & Em Gái</button>
+        <button class="wish-pill" data-category="women_in_life">💐 Người Phụ Nữ Trong Đời Tôi</button>
+      </div>
+    </section>
+
+    <!-- Floating Cute Animated Stickers Layer -->
+    <div class="cute-stickers-layer" id="cuteStickersLayer">
+      <div class="cute-sticker sticker-1" title="Bé Gấu Ôm Tim 🧸" data-sticker="bear">
+        <span class="sticker-emoji">🧸</span>
+        <span class="sticker-sparkle">✨</span>
+      </div>
+      <div class="cute-sticker sticker-2" title="Bé Thỏ Bó Hoa 🐰" data-sticker="bunny">
+        <span class="sticker-emoji">🐰</span>
+        <span class="sticker-sparkle">🌸</span>
+      </div>
+      <div class="cute-sticker sticker-3" title="Thư Tình Cánh Bướm 💌" data-sticker="letter">
+        <span class="sticker-emoji">💌</span>
+        <span class="sticker-sparkle">💖</span>
+      </div>
+      <div class="cute-sticker sticker-4" title="Nơ Hồng Dễ Thương 🎀" data-sticker="ribbon">
+        <span class="sticker-emoji">🎀</span>
+      </div>
+      <div class="cute-sticker sticker-5" title="Bông Tulip Rực Rỡ 🌷" data-sticker="tulip">
+        <span class="sticker-emoji">🌷</span>
+      </div>
+      <div class="cute-sticker sticker-6" title="Dâu Tây Ngọt Ngào 🍓" data-sticker="berry">
+        <span class="sticker-emoji">🍓</span>
+      </div>
+    </div>
+
+    <!-- Adorable Animated Mascot Companion (Interactive Cute Bunny / Bear) -->
+    <div class="mascot-companion" id="mascotCompanion">
+      <div class="mascot-speech-bubble" id="mascotBubble">
+        <span id="mascotBubbleText">Chào bạn! Chúc bạn ngày 20/10 ngập tràn niềm vui nha! 🌸</span>
+        <span class="bubble-arrow"></span>
+      </div>
+      <div class="mascot-interactive-body" id="mascotBody" title="Nhấp vào tớ để nhận lời chúc dễ thương nhé!">
+        <div class="mascot-ears">
+          <div class="ear ear-left"><div class="ear-inner"></div></div>
+          <div class="ear ear-right"><div class="ear-inner"></div></div>
+        </div>
+        <div class="mascot-head">
+          <div class="mascot-eyes">
+            <div class="eye eye-left"><div class="eye-pupil"></div></div>
+            <div class="eye eye-right"><div class="eye-pupil"></div></div>
+          </div>
+          <div class="mascot-blush blush-left"></div>
+          <div class="mascot-blush blush-right"></div>
+          <div class="mascot-nose"></div>
+          <div class="mascot-mouth"></div>
+        </div>
+        <div class="mascot-paws">
+          <div class="paw paw-left"></div>
+          <div class="mascot-flower-bouquet">
+            <span class="bouquet-flower">🌹</span>
+            <span class="bouquet-sparkle">✨</span>
+          </div>
+          <div class="paw paw-right paw-wave"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Animated Cartoon Characters Layer -->
+    <div class="animated-characters-world">
+      <!-- 1. Flying Chibi Fairy Girl with Balloons & Petal Basket -->
+      <div class="flying-fairy-character" id="flyingFairy" title="Nhấp vào cô bé tiên hoa để nhận mưa hoa nha!">
+        <div class="fairy-balloons">
+          <div class="heart-balloon balloon-pink"></div>
+          <div class="heart-balloon balloon-gold"></div>
+          <div class="heart-balloon balloon-rose"></div>
+          <div class="balloon-strings"></div>
+        </div>
+        <div class="fairy-body-wrap">
+          <div class="fairy-wings">
+            <div class="wing wing-l"></div>
+            <div class="wing wing-r"></div>
+          </div>
+          <div class="fairy-hair"></div>
+          <div class="fairy-face">
+            <div class="fairy-eyes"><span class="f-eye"></span><span class="f-eye"></span></div>
+            <div class="fairy-blush"></div>
+            <div class="fairy-smile"></div>
+          </div>
+          <div class="fairy-dress"></div>
+          <div class="fairy-basket">🧺🌸</div>
+        </div>
+        <div class="fairy-sparkle-trail">✨</div>
+      </div>
+
+      <!-- 2. Dancing Teddy Bear on a Soft Fluffy Cloud (Bottom Left) -->
+      <div class="dancing-bear-character" id="dancingBear" title="Bé gấu nâu đang nhún nhảy chúc mừng 20/10!">
+        <div class="cloud-podium">
+          <span class="cloud-bubble c1"></span>
+          <span class="cloud-bubble c2"></span>
+          <span class="cloud-bubble c3"></span>
+        </div>
+        <div class="bear-figure">
+          <div class="bear-ears">
+            <div class="b-ear b-ear-l"><div class="b-ear-in"></div></div>
+            <div class="b-ear b-ear-r"><div class="b-ear-in"></div></div>
+          </div>
+          <div class="bear-head">
+            <div class="bear-eyes"><span class="b-eye"></span><span class="b-eye"></span></div>
+            <div class="bear-muzzle">
+              <span class="b-nose"></span>
+              <span class="b-mouth"></span>
+            </div>
+            <div class="bear-cheeks"></div>
+          </div>
+          <div class="bear-body">
+            <div class="bear-belly"></div>
+            <div class="bear-arm arm-l"></div>
+            <div class="bear-arm arm-r arm-holding-flower">
+              <span class="wand-flower">🌷</span>
+            </div>
+          </div>
+          <div class="bear-feet">
+            <span class="b-foot foot-l"></span>
+            <span class="b-foot foot-r"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Playful Cute Kitty Cat Peeking and Wagging Tail -->
+      <div class="playful-cat-character" id="playfulCat" title="Mèo con chúc bạn 20/10 luôn vui vẻ!">
+        <div class="cat-tail-wrap">
+          <div class="cat-tail"></div>
+        </div>
+        <div class="cat-head">
+          <div class="cat-ears">
+            <span class="c-ear c-ear-l"></span>
+            <span class="c-ear c-ear-r"></span>
+          </div>
+          <div class="cat-eyes"><span class="c-eye"></span><span class="c-eye"></span></div>
+          <div class="cat-nose"></div>
+          <div class="cat-whiskers w-l"><span></span><span></span></div>
+          <div class="cat-whiskers w-r"><span></span><span></span></div>
+        </div>
+        <div class="cat-rose-sniff">🌹</div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Cinematic Film Mode Fullscreen Overlay -->
+  <div id="cinematicFilmOverlay" class="cinematic-film-overlay hidden">
+    <!-- Top Movie Letterbox Bar -->
+    <div class="movie-letterbox top">
+      <div class="film-strip-decor">
+        <div class="sprocket-track">
+          <span class="sprocket"></span><span class="sprocket"></span><span class="sprocket"></span><span class="sprocket"></span>
+          <span class="sprocket"></span><span class="sprocket"></span><span class="sprocket"></span><span class="sprocket"></span>
+        </div>
+        <div class="film-movie-title">
+          <i class="fa-solid fa-film"></i>
+          <span>THƯỚC PHIM TRI ÂN: NGÀY PHỤ NỮ VIỆT NAM 20-10</span>
+        </div>
+        <div class="sprocket-track">
+          <span class="sprocket"></span><span class="sprocket"></span><span class="sprocket"></span><span class="sprocket"></span>
+          <span class="sprocket"></span><span class="sprocket"></span><span class="sprocket"></span><span class="sprocket"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cinematic Center Subtitle & Narration -->
+    <div class="movie-narrative-stage">
+      <div class="movie-chapter-badge" id="movieChapterBadge">Chương I: Lời Mở Đầu - Bình Minh Yêu Thương</div>
+      <p class="movie-subtitles-text" id="movieSubtitlesText">"Có một ngày để cả đất nước cùng hướng về một nửa thế giới..."</p>
+    </div>
+
+    <!-- Bottom Movie Letterbox Bar & Controls -->
+    <div class="movie-letterbox bottom">
+      <div class="movie-controls-bar">
+        <button id="filmPlayPauseBtn" class="film-btn" title="Tạm dừng / Tiếp tục">
+          <i class="fa-solid fa-pause"></i>
+        </button>
+        <div class="film-progress-container">
+          <div class="film-progress-bar" id="filmProgressBar"></div>
+        </div>
+        <span class="film-time-label" id="filmTimeLabel">00:08 / 00:48</span>
+        <button id="exitFilmBtn" class="film-exit-button">
+          <i class="fa-solid fa-circle-xmark"></i> <span>Thoát Thước Phim</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Film Vignette & Light Leak Filter -->
+    <div class="film-screen-vignette"></div>
+  </div>
+
+  <!-- Modal: Custom Card Editor & Creator -->
+  <div id="customizerModal" class="modal-backdrop hidden">
+    <div class="glass-modal-panel">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <i class="fa-solid fa-heart-circle-bolt modal-icon"></i>
+          <div>
+            <h3>Thiết Kế Thiệp 20-10 Riêng</h3>
+            <p>Gửi gắm tâm tình ngọt ngào đến người phụ nữ bạn yêu thương</p>
+          </div>
+        </div>
+        <button id="closeModalBtn" class="modal-close-btn" aria-label="Đóng">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="inputRecipient"><i class="fa-solid fa-user-heart"></i> Tên người nhận:</label>
+          <input type="text" id="inputRecipient" placeholder="Ví dụ: Mẹ kính yêu, Vợ yêu Thảo, Chị Phương, Cô giáo Lan..." value="Người Phụ Nữ Tôi Yêu">
+        </div>
+
+        <div class="form-group">
+          <label><i class="fa-solid fa-sparkles"></i> Lời chúc mẫu nhanh:</label>
+          <div class="quick-templates" id="quickTemplates">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="inputMessage"><i class="fa-solid fa-message-heart"></i> Nội dung lời chúc:</label>
+          <textarea id="inputMessage" rows="4" placeholder="Nhập những lời chân thành từ trái tim bạn..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="inputSender"><i class="fa-solid fa-signature"></i> Người gửi (Tên của bạn):</label>
+          <input type="text" id="inputSender" placeholder="Ví dụ: Con trai của mẹ, Anh, Em gái, Tập thể lớp..." value="Người luôn thương yêu bạn">
+        </div>
+
+        <!-- Live mini preview canvas for capturing high-res card -->
+        <div class="card-preview-container">
+          <div class="preview-badge">Xem trước thiệp</div>
+          <div class="mini-preview-card" id="miniPreview">
+            <div class="preview-decor-top">❀ 20 - 10 ❀</div>
+            <div class="preview-to" id="previewTo">Gửi: Người Phụ Nữ Tôi Yêu</div>
+            <div class="preview-text" id="previewText">...</div>
+            <div class="preview-from" id="previewFrom">Từ: Người luôn thương yêu bạn</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="resetFormBtn" class="pill-btn secondary-btn">
+          <i class="fa-solid fa-rotate-left"></i> Mặc định
+        </button>
+        <button id="applyCardBtn" class="pill-btn primary-gradient-btn">
+          <i class="fa-solid fa-check"></i> Áp Dụng Lên Không Gian 3D
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification System -->
+  <div id="toastNotification" class="toast-popup hidden">
+    <div class="toast-icon">
+      <i class="fa-solid fa-circle-check"></i>
+    </div>
+    <div class="toast-message" id="toastMessage">Đã sao chép lời chúc vào khay nhớ tạm!</div>
+  </div>
+
+  <!-- Hidden Canvas for Rendering High-Definition Image of the Card for Download -->
+  <canvas id="exportCanvas" width="1080" height="1350" style="display: none;"></canvas>
+
+  <!-- Interactive Floating Petal Rain Cursor FX Canvas -->
+  <canvas id="cursorFxCanvas"></canvas>
+
+  <!-- Sound & Scripts -->
+  <script src="audio.js"></script>
+  <script src="scene3d.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

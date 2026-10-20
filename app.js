@@ -85,9 +85,9 @@ const CINEMATIC_CHAPTERS = [
   {
     badge: "Chương IV: Tri Ân Những Người Phụ Nữ Trong Đời Tôi",
     subtitle: "Cảm ơn từng người phụ nữ tuyệt vời đã xuất hiện trong đời tôi — dù gắn bó hay chỉ thoáng qua, mỗi nụ cười và sự dịu dàng của bạn đều đã thắp sáng cuộc đời này...",
-    shotRadius: 14,
-    shotHeight: 3.5,
-    mode: 'rain',
+    shotRadius: 11,
+    shotHeight: 3.0,
+    mode: 'rose',
     duration: 10
   },
   {
@@ -176,6 +176,7 @@ class AppController {
     this.flyingFairy = document.getElementById('flyingFairy');
     this.dancingBear = document.getElementById('dancingBear');
     this.playfulCat = document.getElementById('playfulCat');
+    this.gardenHedgehog = document.getElementById('gardenHedgehog');
 
     // Modal
     this.customizerModal = document.getElementById('customizerModal');
@@ -470,80 +471,122 @@ class AppController {
     const w = canvas.width;
     const h = canvas.height;
 
-    // 1. Background Luxury Gradient
-    const bgGrad = ctx.createRadialGradient(w / 2, h / 2, 50, w / 2, h / 2, h * 0.7);
-    bgGrad.addColorStop(0, '#360923');
-    bgGrad.addColorStop(0.5, '#1e0413');
-    bgGrad.addColorStop(1, '#0c0108');
-    ctx.fillStyle = bgGrad;
+    // 1. Storybook Sky & Meadow Background
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+    skyGrad.addColorStop(0, '#bfe3f2');
+    skyGrad.addColorStop(0.55, '#e4f2ec');
+    skyGrad.addColorStop(1, '#fdf0dc');
+    ctx.fillStyle = skyGrad;
     ctx.fillRect(0, 0, w, h);
 
-    // 2. Golden Border Frame
-    ctx.strokeStyle = '#f6d365';
-    ctx.lineWidth = 6;
-    ctx.strokeRect(60, 60, w - 120, h - 120);
+    // Soft sun & rolling hills
+    ctx.fillStyle = 'rgba(255, 224, 138, 0.55)';
+    ctx.beginPath();
+    ctx.arc(170, 150, 110, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffe08a';
+    ctx.beginPath();
+    ctx.arc(170, 150, 70, 0, Math.PI * 2);
+    ctx.fill();
 
-    ctx.strokeStyle = 'rgba(255, 182, 193, 0.35)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(76, 76, w - 152, h - 152);
+    const drawHill = (color, y, amp) => {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.bezierCurveTo(w * 0.3, y - amp, w * 0.6, y + amp, w, y - amp * 0.4);
+      ctx.lineTo(w, h);
+      ctx.lineTo(0, h);
+      ctx.closePath();
+      ctx.fill();
+    };
+    drawHill('#c4dfb6', h - 300, 70);
+    drawHill('#a5cf95', h - 210, 60);
+    drawHill('#86bb79', h - 120, 40);
 
-    // 3. Corner Floral Decor
-    const drawCornerPetals = (cx, cy) => {
+    // 2. Paper Card with dashed stitch border
+    ctx.fillStyle = '#fffaf1';
+    ctx.shadowColor = 'rgba(112, 78, 58, 0.22)';
+    ctx.shadowBlur = 40;
+    ctx.shadowOffsetY = 14;
+    ctx.beginPath();
+    ctx.roundRect(80, 90, w - 160, h - 230, 48);
+    ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    ctx.strokeStyle = '#f0d6c6';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([14, 10]);
+    ctx.beginPath();
+    ctx.roundRect(104, 114, w - 208, h - 278, 34);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 3. Corner Rose & Leaf Decor
+    const drawCornerRose = (cx, cy) => {
       ctx.save();
       ctx.translate(cx, cy);
-      ctx.fillStyle = '#ff2d75';
-      for (let i = 0; i < 4; i++) {
-        ctx.beginPath();
-        ctx.arc(15, 15, 8, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.rotate(Math.PI / 2);
-      }
-      ctx.fillStyle = '#f6d365';
+      ctx.fillStyle = '#6fa566';
       ctx.beginPath();
-      ctx.arc(0, 0, 7, 0, Math.PI * 2);
+      ctx.ellipse(-20, 14, 22, 10, -0.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(20, 14, 22, 10, 0.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#e8657f';
+      ctx.beginPath();
+      ctx.arc(0, 0, 20, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#f6a9b9';
+      ctx.beginPath();
+      ctx.arc(-3, -4, 11, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     };
 
-    drawCornerPetals(90, 90);
-    drawCornerPetals(w - 90, 90);
-    drawCornerPetals(90, h - 90);
-    drawCornerPetals(w - 90, h - 90);
+    drawCornerRose(150, 160);
+    drawCornerRose(w - 150, 160);
+    drawCornerRose(150, h - 200);
+    drawCornerRose(w - 150, h - 200);
+
+    // Rose bushes on the meadow
+    [[60, h - 40], [150, h - 20], [w - 60, h - 40], [w - 150, h - 20]].forEach(([x, y]) => drawCornerRose(x, y));
 
     // 4. Header Badge
-    ctx.fillStyle = '#ff2d75';
+    ctx.fillStyle = '#e3f0da';
     ctx.beginPath();
-    ctx.roundRect(w / 2 - 140, 130, 280, 48, 24);
+    ctx.roundRect(w / 2 - 150, 150, 300, 50, 25);
     ctx.fill();
 
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = '#6fa566';
     ctx.font = 'bold 22px "Be Vietnam Pro", sans-serif';
     ctx.textAlign = 'center';
     ctx.letterSpacing = '3px';
-    ctx.fillText('20 THÁNG 10', w / 2, 162);
+    ctx.fillText('20 THÁNG 10', w / 2, 183);
+    ctx.letterSpacing = '0px';
 
-    // 5. Crown Icon / Decor
-    ctx.font = '40px serif';
-    ctx.fillStyle = '#f6d365';
-    ctx.fillText('👑', w / 2, 240);
+    // 5. Tulip Decor
+    ctx.font = '44px serif';
+    ctx.fillText('🌷', w / 2, 262);
 
     // 6. Main Headline
-    ctx.font = 'italic bold 48px "Playfair Display", serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText('Chúc Mừng Ngày Phụ Nữ Việt Nam', w / 2, 320);
+    ctx.font = 'bold 48px "Playfair Display", serif';
+    ctx.fillStyle = '#5b3c36';
+    ctx.fillText('Chúc Mừng Ngày Phụ Nữ Việt Nam', w / 2, 340);
 
     // 7. Recipient
-    ctx.font = '28px "Be Vietnam Pro", sans-serif';
-    ctx.fillStyle = '#ffccd8';
-    ctx.fillText('Kính gửi:', w / 2, 400);
+    ctx.font = 'italic 28px "Be Vietnam Pro", sans-serif';
+    ctx.fillStyle = '#8f6f66';
+    ctx.fillText('Kính gửi:', w / 2, 410);
 
-    ctx.font = 'bold 54px "Dancing Script", cursive, "Playfair Display", serif';
-    ctx.fillStyle = '#f6d365';
-    ctx.fillText(this.displayRecipientName.textContent, w / 2, 470);
+    ctx.font = 'bold 56px "Dancing Script", cursive, "Playfair Display", serif';
+    ctx.fillStyle = '#e26a85';
+    ctx.fillText(this.displayRecipientName.textContent, w / 2, 478);
 
     // 8. Wish Message Body (Word Wrapping)
     ctx.font = 'italic 34px "Be Vietnam Pro", sans-serif';
-    ctx.fillStyle = '#fff5f8';
+    ctx.fillStyle = '#5b3c36';
     const rawMsg = (this.currentFullMessage || (this.typewriterText ? this.typewriterText.textContent : '')).replace(/^"|"$/g, '');
     const words = rawMsg.split(' ');
     let line = '';
@@ -567,13 +610,13 @@ class AppController {
 
     // 9. Sender Signature
     ctx.font = '26px "Be Vietnam Pro", sans-serif';
-    ctx.fillStyle = '#ffb8d2';
+    ctx.fillStyle = '#8f6f66';
     ctx.textAlign = 'right';
-    ctx.fillText('Gửi trọn yêu thương từ:', w - 160, h - 230);
+    ctx.fillText('Gửi trọn yêu thương từ:', w - 180, h - 270);
 
     ctx.font = 'bold 50px "Great Vibes", cursive, "Playfair Display", serif';
-    ctx.fillStyle = '#f6d365';
-    ctx.fillText(this.displaySenderName.textContent, w - 160, h - 165);
+    ctx.fillStyle = '#e26a85';
+    ctx.fillText(this.displaySenderName.textContent, w - 180, h - 205);
 
     // 10. Trigger Download
     const link = document.createElement('a');
@@ -607,7 +650,7 @@ class AppController {
           vx: (Math.random() - 0.5) * 1.5,
           vy: (Math.random() - 0.5) * 1.5 - 0.5,
           radius: 1.5 + Math.random() * 2.5,
-          color: Math.random() > 0.4 ? '#ff758c' : '#ffd700',
+          color: Math.random() > 0.4 ? '#f39db1' : (Math.random() > 0.5 ? '#ffe08a' : '#a9d39b'),
           life: 1.0,
           decay: 0.025 + Math.random() * 0.02
         });
@@ -703,7 +746,20 @@ class AppController {
       });
     }
 
-    // 5. Floating Stickers Click: Bounce & Sparkle
+    // 5. Garden Hedgehog Carrying a Rose
+    if (this.gardenHedgehog) {
+      this.gardenHedgehog.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.gardenHedgehog.classList.add('hedgehog-hop');
+        setTimeout(() => this.gardenHedgehog.classList.remove('hedgehog-hop'), 700);
+
+        if (window.soundEngine) window.soundEngine.playTapSound();
+        this.spawnMascotHearts(e.clientX, e.clientY);
+        this.showToast("Bé Nhím: Tặng bạn đóa hồng nhỏ, chúc bạn 20/10 bình yên và dịu dàng! 🦔🌹");
+      });
+    }
+
+    // 6. Floating Stickers Click: Bounce & Sparkle
     const stickers = document.querySelectorAll('.cute-sticker');
     stickers.forEach(sticker => {
       sticker.addEventListener('click', (e) => {
@@ -763,7 +819,7 @@ class AppController {
 
     // Update Play/Pause icon
     this.filmPlayPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
-    this.showToast("Bắt đầu thước phim tri ân 20-10 🎬");
+    this.showToast("Mở trang sách câu chuyện 20-10 📖");
   }
 
   playFilmChapter(index) {
@@ -996,7 +1052,7 @@ class AppController {
 
         this.scene3D.setTheme(theme);
         this.themeMenu.classList.remove('show');
-        this.showToast(`Đã chuyển sang không gian: ${option.textContent.trim()}`);
+        this.showToast(`Đã chuyển sang khung cảnh: ${option.textContent.trim()}`);
       });
     });
 
@@ -1012,18 +1068,6 @@ class AppController {
       });
     });
 
-    // Category Wish Pills at Bottom
-    const pills = document.querySelectorAll('.wish-pill');
-    pills.forEach(pill => {
-      pill.addEventListener('click', () => {
-        pills.forEach(p => p.classList.remove('active'));
-        pill.classList.add('active');
-        const cat = pill.getAttribute('data-category');
-        this.updateWishesPool(cat);
-        this.displayCurrentWish(true);
-        if (window.soundEngine) window.soundEngine.playTapSound();
-      });
-    });
   }
 }
 
